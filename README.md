@@ -13,9 +13,9 @@ To run the scripts in this repository, you will need:
 - Necessary Python packages (see individual script requirements)
   
 # Installation
-1- Clone the repository: git clone https://github.com/yourusername/your-repo-name.git
-2- Navigate to the repository directory: cd your-repo-name
-3- Install the required packages: pip install -r requirements.txt
+- Clone the repository: git clone https://github.com/yourusername/your-repo-name.git
+- Navigate to the repository directory: cd your-repo-name
+- Install the required packages: pip install -r requirements.txt
 
 # Usage
 Navigate to the directory of the script you want to use and run it with Python: python script_name.py
