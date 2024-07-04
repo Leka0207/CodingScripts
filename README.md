@@ -4,7 +4,7 @@ Welcome to the Python Scripts Repository! This repository provides open access t
 # Features
 - Variety of Scripts: A wide range of scripts for different applications.
 - Easy to Use: Each script is well-documented with clear instructions.
-- Open Source: Contributions are welcome and encouraged.
+- Open Source: Open to all users
 
 # Requirements
 To run the scripts in this repository, you will need:
