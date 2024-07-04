@@ -1,0 +1,85 @@
+Sub FindOutOfToleranceSensors()
+  Dim ws As Worksheet
+  Dim lastRow As Long, lastCol As Long
+  Dim i As Long, j As Long
+  Dim outOfToleranceCount As Long
+  Dim sensorName As String, sensorValue As Double
+  Dim toleranceMin As Double, toleranceMax As Double
+
+' Create a new Word document to store results
+Dim wdApp As Word.Application
+Dim wdDoc As Word.Document
+Set wdApp = New Word.Application
+Set wdDoc = wdApp.Documents.Add
+wdApp.Visible = True
+
+' Array of worksheet names to check
+Dim sheetsToCheck As Variant
+sheetsToCheck = Array("Flow 2023", "Temperature 2023", "Pressure 2023")
+
+For Each wsName In sheetsToCheck
+  Set ws = ThisWorkbook.Worksheets(wsName)
+  lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+  lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+  ' Search for out-of-tolerance sensors
+  For i = 2 To lastRow ' Assuming row 1 is header
+    sensorName = ws.Cells(i, 1).Value
+
+    For j = 2 To lastCol
+      If Not IsEmpty(ws.Cells(i, j)) Then
+        sensorValue = ws.Cells(i, j).Value
+
+        ' Get tolerance range based on sensor type
+        GetToleranceRange ws.Name, sensorName, toleranceMin, toleranceMax
+
+        ' Check if value is out of tolerance
+        If sensorValue < toleranceMin Or sensorValue > toleranceMax Then
+          outOfToleranceCount = outOfToleranceCount + 1
+
+              ' Write information to Word document
+              With wdDoc.Content
+              .InsertAfter "Sheet: " & ws.Name & vbNewLine
+              .InsertAfter "Sensor: " & sensorName & vbNewLine
+              .InsertAfter "Value: " & sensorValue & vbNewLine
+              .InsertAfter "Tolerance Range: " & toleranceMin & " to " & toleranceMax & vbNewLine
+    
+              .InsertAfter "----------------------------------------" & vbNewLine
+          End With
+        End If
+      End If
+    Next j
+  Next i
+Next wsName
+
+  ' Save and close Word document
+  wdDoc.SaveAs2 ThisWorkbook.Path & "\Out_of_Tolerance_Report.docx"
+  wdDoc.Close
+  wdApp.Quit
+
+  MsgBox "Found " & outOfToleranceCount & " out-of-tolerance sensors. Report saved."
+End Sub
+
+----------------------------------------------------------------------------------------------------------------------------
+
+Sub GetToleranceRange(sheetName As String, sensorName As String, ByRef minTolerance As Double,
+ByRef maxTolerance As Double)
+
+' Implement logic to get tolerance range for a given sensor
+' This is a placeholder - you'll need to adjust based on your specific requirements
+
+Select Case sheetName
+  Case "Flow 2023"
+    minTolerance = 0.95 ' 5% below nominal
+    maxTolerance = 1.05 ' 5% above nominal
+  Case "Temperature 2023"
+    minTolerance = -0.5 ' 0.5 degrees below nominal
+    maxTolerance = 0.5 ' 0.5 degrees above nominal
+  Case "Pressure 2023"
+    minTolerance = 0.98 ' 2% below nominal
+    maxTolerance = 1.02 ' 2% above nominal
+  Case Else
+    minTolerance = 0.9 ' Default 10% tolerance
+    maxTolerance = 1.1
+  End Select
+End Sub
