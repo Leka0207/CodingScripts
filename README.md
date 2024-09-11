@@ -15,3 +15,6 @@ To run the scripts in this repository, you will need:
 - Clone the repository: git clone https://github.com/yourusername/your-repo-name.git
 - Navigate to the repository directory: cd your-repo-name
 - Install the required packages: pip install -r requirements.txt
+
+# Link to Personal Website (code in folder called Website Project)
+- https://leka0207.github.io/MyWebsite/
