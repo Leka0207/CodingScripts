@@ -1,0 +1,3 @@
+Command to start Web App:
+
+streamlit run "C:\Users\User\Desktop\Stock Web App\main.py"
