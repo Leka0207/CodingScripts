@@ -74,6 +74,11 @@ TARGET = "pct_change_next_day"
 @st.cache_data(show_spinner="Loading and processing data...")
 def load_and_process(file):
     df = pd.read_csv(file)
+    # ── FIX: normalise column names to lowercase & strip whitespace ──
+    df.columns = df.columns.str.strip().str.lower()
+    # ── Also normalise the stock-ticker column (could be "Name" or "name") ──
+    if "name" in df.columns and "Name" not in df.columns:
+        df.rename(columns={"name": "Name"}, inplace=True)
     df["date"] = pd.to_datetime(df["date"])
     df = df.dropna(subset=["open","high","low","close"]).sort_values(["Name","date"]).reset_index(drop=True)
     df["next_day_close"] = df.groupby("Name")["close"].shift(-1)
