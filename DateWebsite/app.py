@@ -3,6 +3,7 @@ from datetime import date, timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import streamlit.components.v1 as components
 
 # ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -363,9 +364,139 @@ elif st.session_state.stage == -1:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STAGE 1 — She Said Yes
+# STAGE 1 — She Said Yes  (with confetti + falling petals)
 # ══════════════════════════════════════════════════════════════════════════════
 elif st.session_state.stage == 1:
+    # ── Full-screen confetti + petal canvas ──────────────────────────────────
+    components.html("""
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: transparent; overflow: hidden; }
+  canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// ── Particle pool ──────────────────────────────────────────────────────────
+const COLORS = [
+  '#e8a0c8', '#f4d0e8', '#c04080', '#d060a0',
+  '#b040a0', '#f8e0f4', '#ff8fbe', '#ff6fa8',
+  '#ffd6ec', '#a020a0'
+];
+
+const PETALS = ['🌸', '🌹', '🌺', '✨', '💕', '🌷'];
+
+const particles = [];
+const TOTAL     = 160;
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+
+class Particle {
+  constructor(burst) {
+    this.reset(burst);
+  }
+  reset(burst) {
+    // Starting position — burst from center-top or random top edge
+    this.x  = burst ? canvas.width / 2 : rand(0, canvas.width);
+    this.y  = burst ? rand(-40, 0)      : rand(-80, -10);
+
+    // Velocity
+    const angle = burst ? rand(-Math.PI * 1.4, -Math.PI * 0.6) : rand(0.1, 0.4);
+    const speed = burst ? rand(4, 14) : rand(1.2, 3.5);
+    this.vx = burst ? Math.cos(angle) * speed : rand(-0.8, 0.8);
+    this.vy = burst ? Math.sin(angle) * speed : speed;
+
+    this.gravity   = rand(0.08, 0.22);
+    this.drag      = rand(0.97, 0.995);
+    this.rotation  = rand(0, Math.PI * 2);
+    this.rotSpeed  = rand(-0.12, 0.12);
+    this.alpha     = 1;
+    this.fadeSpeed = rand(0.004, 0.012);
+    this.color     = COLORS[Math.floor(rand(0, COLORS.length))];
+    this.size      = rand(6, 14);
+    this.shape     = Math.random() < 0.25 ? 'petal' : (Math.random() < 0.5 ? 'circle' : 'rect');
+    this.emoji     = PETALS[Math.floor(rand(0, PETALS.length))];
+    this.wobble    = rand(0, Math.PI * 2);
+    this.wobbleSpd = rand(0.05, 0.12);
+    this.dead      = false;
+  }
+  update() {
+    this.wobble += this.wobbleSpd;
+    this.vx     += Math.sin(this.wobble) * 0.04;
+    this.vy     += this.gravity;
+    this.vx     *= this.drag;
+    this.vy     *= this.drag;
+    this.x      += this.vx;
+    this.y      += this.vy;
+    this.rotation += this.rotSpeed;
+    this.alpha  -= this.fadeSpeed;
+    if (this.alpha <= 0 || this.y > canvas.height + 60) this.dead = true;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.alpha);
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    if (this.shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    } else if (this.shape === 'rect') {
+      ctx.fillStyle = this.color;
+      ctx.fillRect(-this.size / 2, -this.size / 4, this.size, this.size / 2);
+    } else {
+      // petal emoji
+      ctx.font = `${this.size + 4}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.emoji, 0, 0);
+    }
+    ctx.restore();
+  }
+}
+
+// ── Initial burst ──────────────────────────────────────────────────────────
+for (let i = 0; i < TOTAL; i++) {
+  particles.push(new Particle(i < 80)); // first 80 burst, rest fall from top
+}
+
+// ── Extra wave after 600ms ─────────────────────────────────────────────────
+setTimeout(() => {
+  for (let i = 0; i < 60; i++) particles.push(new Particle(true));
+}, 600);
+
+// ── Animation loop ─────────────────────────────────────────────────────────
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].draw();
+    if (particles[i].dead) particles.splice(i, 1);
+  }
+  if (particles.length > 0) requestAnimationFrame(loop);
+}
+loop();
+
+// Resize handler
+window.addEventListener('resize', () => {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
+""", height=0)   # height=0 — canvas is position:fixed so it overlays the whole page
+
     step_dots(1)
     st.markdown("""
     <div class="stage-card">
