@@ -174,6 +174,7 @@ st.markdown("""
 # ── Session State Init ─────────────────────────────────────────────────────
 defaults = {
     "stage": 0,
+    "her_name": "",
     "chosen_time": None,
     "chosen_date": None,
     "chosen_vibes": [],
@@ -195,22 +196,26 @@ def step_dots(current: int):
 
 
 # ── Email Sender ───────────────────────────────────────────────────────────
-def send_date_results_email(date_str, time_str, vibes_str, notes_str):
+def send_date_results_email(name_str, date_str, time_str, vibes_str, notes_str):
     """Send results to Anthony's email via Gmail SMTP."""
     try:
         cfg = st.secrets["email"]
-        sender    = cfg["sender_address"]      # your Gmail address
-        password  = cfg["app_password"]        # Gmail App Password (16-char)
-        recipient = cfg["recipient_address"]   # where you want to receive results
+        sender    = cfg["sender_address"]
+        password  = cfg["app_password"]
+        recipient = cfg["recipient_address"]
+
+        display_name = name_str if name_str.strip() else "She"
+        subject_name = name_str.strip() if name_str.strip() else "Her"
 
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = "💌 She Said YES — Date Details Inside"
+        msg["Subject"] = f"💌 {subject_name} Said YES — Date Details Inside"
         msg["From"]    = sender
         msg["To"]      = recipient
 
         plain = f"""
-She said YES! Here are her date preferences:
+{display_name} said YES! Here are the date details:
 
+👤  Name:   {name_str if name_str.strip() else '(not provided)'}
 📅  Date:   {date_str}
 ⏰  Time:   {time_str}
 ✨  Vibe:   {vibes_str}
@@ -254,9 +259,13 @@ Go get her! 🌹
 <div class="wrapper">
   <div class="header">
     <span class="emoji-big">💌</span>
-    <h1>She said yes — and here's the plan</h1>
+    <h1>{display_name} said yes — and here's the plan</h1>
   </div>
   <div class="body">
+    <div class="row">
+      <div class="row-icon">👤</div>
+      <div><div class="row-label">Name</div><div class="row-value">{name_str if name_str.strip() else '—'}</div></div>
+    </div>
     <div class="row">
       <div class="row-icon">🗓</div>
       <div><div class="row-label">Date</div><div class="row-value">{date_str}</div></div>
@@ -498,29 +507,52 @@ window.addEventListener('resize', () => {
 """, height=0)   # height=0 — canvas is position:fixed so it overlays the whole page
 
     step_dots(1)
-    st.markdown("""
+
+    # Greeting headline — updates live as she types
+    name = st.session_state.her_name.strip()
+    greeting = f"Yes!! {name} said yes! 🎉" if name else "Yes!! She said yes! 🎉"
+    subline  = f"You just made my whole day, {name} 🌸" if name else "You just made my whole day 🌸"
+
+    st.markdown(f"""
     <div class="stage-card">
       <div class="float-icon glow-text">🎉</div>
       <h2 style="font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:300; color:#f4d0e8; margin:1.2rem 0 0.4rem;">
-        Yes!! She said yes!
+        {greeting}
       </h2>
-      <p class="subhead">You just made my whole day 🌸</p>
+      <p class="subhead">{subline}</p>
       <div class="divider"></div>
       <p class="body-text">
         This is going to be so much fun. Let's figure out the details together so we can plan<br>
         the <em style="font-family:'Cormorant Garamond',serif; color:#e8a0c8; font-style:italic;">perfect</em> evening for you.
       </p>
       <div class="petal-row">🌹 ✨ 🌹</div>
-      <p class="body-text" style="font-size:0.9rem; color:rgba(210,175,200,0.65);">
-        A few quick questions and we'll have everything locked in.
-      </p>
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Name input ────────────────────────────────────────────────────────────
     st.write("")
+    st.markdown("""
+    <p style="text-align:center; font-family:'Cormorant Garamond',serif; font-size:1.25rem;
+         font-style:italic; color:rgba(230,190,215,0.85); margin-bottom:0.6rem;">
+      First, what's your name? ✨
+    </p>
+    """, unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("Let's plan it →", type="primary", use_container_width=True):
+        name_input = st.text_input(
+            "Your name",
+            value=st.session_state.her_name,
+            placeholder="Enter your name…",
+            label_visibility="collapsed",
+        )
+        if name_input != st.session_state.her_name:
+            st.session_state.her_name = name_input
+            st.rerun()
+
+        st.write("")
+        btn_label = f"Let's plan it, {name_input.strip()} →" if name_input.strip() else "Let's plan it →"
+        if st.button(btn_label, type="primary", use_container_width=True, disabled=not name_input.strip()):
             st.session_state.stage = 2
             st.rerun()
 
@@ -530,11 +562,13 @@ window.addEventListener('resize', () => {
 # ══════════════════════════════════════════════════════════════════════════════
 elif st.session_state.stage == 2:
     step_dots(2)
-    st.markdown("""
+    name = st.session_state.her_name.strip()
+    time_q = f"What time works best for you, {name}?" if name else "What time works best for you?"
+    st.markdown(f"""
     <div class="stage-card">
       <p class="subhead">Step 1 of 3</p>
       <h2 style="font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; color:#f0d8f0; margin-bottom:0.4rem;">
-        What time works best for you?
+        {time_q}
       </h2>
       <p class="body-text" style="font-size:0.92rem; color:rgba(210,180,205,0.7); margin-bottom:1.5rem;">
         Pick whichever slot fits your vibe.
@@ -710,17 +744,27 @@ elif st.session_state.stage == 5:
 
     friendly_date  = st.session_state.chosen_date.strftime("%A, %B %d, %Y") if st.session_state.chosen_date else "TBD"
     friendly_vibes = ",  ".join(st.session_state.chosen_vibes) if st.session_state.chosen_vibes else "Surprise me!"
+    name           = st.session_state.her_name.strip()
+    final_headline = f"{name}, get ready for the<br>best date ever 🥰" if name else "Get ready for the<br>best date ever 🥰"
+    notes_prompt   = f"Anything else you want me to know, {name}? 💬" if name else "Anything else you want me to know? 💬"
 
     # ── Summary card ──
-    st.markdown("""
+    st.markdown(f"""
     <div class="final-card">
-      <p class="final-headline glow-text">Get ready for the<br>best date ever 🥰</p>
+      <p class="final-headline glow-text">{final_headline}</p>
       <p style="font-size:0.85rem; color:rgba(200,160,190,0.6); letter-spacing:0.1em;
            text-transform:uppercase; margin:0.8rem 0 1.8rem;">Here's what we've got planned</p>
       <div class="divider"></div>
     """, unsafe_allow_html=True)
 
     st.markdown(f"""
+      <div class="summary-item">
+        <span style="font-size:1.3rem;">👤</span>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(200,155,185,0.6); margin-bottom:2px;">Name</div>
+          <div style="color:#f0d8f0;">{name if name else "—"}</div>
+        </div>
+      </div>
       <div class="summary-item">
         <span style="font-size:1.3rem;">🗓</span>
         <div>
@@ -755,13 +799,13 @@ elif st.session_state.stage == 5:
 
     # ── Notes / Comments section ──
     st.write("")
-    st.markdown("""
+    st.markdown(f"""
     <div style="background:linear-gradient(160deg,rgba(255,255,255,0.03),rgba(140,40,100,0.06));
          border:1px solid rgba(180,80,140,0.2); border-radius:20px; padding:2rem 2rem 1.5rem;
          animation: fadeUp 1s ease both;">
       <p style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:300;
            color:#f0d8f0; margin:0 0 0.3rem; text-align:center;">
-        Anything else you want me to know? 💬
+        {notes_prompt}
       </p>
       <p style="font-size:0.88rem; color:rgba(210,175,200,0.6); text-align:center;
            margin-bottom:1.4rem; letter-spacing:0.04em;">
@@ -787,6 +831,7 @@ elif st.session_state.stage == 5:
             if st.button("Send My Answers 💌", type="primary", use_container_width=True):
                 with st.spinner("Sending your details…"):
                     ok, err = send_date_results_email(
+                        st.session_state.her_name,
                         friendly_date,
                         st.session_state.chosen_time,
                         friendly_vibes,
@@ -808,9 +853,10 @@ elif st.session_state.stage == 5:
                     </div>
                     """, unsafe_allow_html=True)
         else:
-            st.markdown("""
+            sent_msg = f"✅ Sent! He's got your details, {name}. Get ready. 🌹" if name else "✅ Sent! He's got your details. Get ready. 🌹"
+            st.markdown(f"""
             <div class="email-success">
-              ✅ Sent! He's got your details. Get ready. 🌹
+              {sent_msg}
             </div>
             """, unsafe_allow_html=True)
 
