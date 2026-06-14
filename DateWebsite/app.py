@@ -95,6 +95,24 @@ st.markdown("""
     border: 1px solid rgba(210,100,170,0.7) !important; color: #f8e0f0 !important; box-shadow: 0 0 18px rgba(180,60,140,0.35) !important;
   }
 
+  /* Location option buttons — full width, left-aligned, slightly taller */
+  .loc-btn > button {
+    background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(180,80,140,0.22) !important;
+    color: rgba(235,205,225,0.88) !important; border-radius: 14px !important;
+    padding: 1rem 1.3rem !important; font-size: 0.9rem !important;
+    letter-spacing: 0.03em !important; width: 100% !important;
+    text-align: left !important; transition: all 0.2s ease !important; margin-bottom: 0.1rem !important;
+  }
+  .loc-btn > button:hover {
+    background: rgba(160,50,120,0.16) !important; border-color: rgba(200,90,160,0.5) !important;
+    transform: translateX(4px) !important;
+  }
+  .loc-btn-selected > button {
+    background: linear-gradient(135deg, rgba(180,50,130,0.4), rgba(100,30,150,0.38)) !important;
+    border: 1px solid rgba(210,100,170,0.65) !important; color: #f8e0f0 !important;
+    box-shadow: 0 0 16px rgba(180,60,140,0.28) !important; transform: translateX(4px) !important;
+  }
+
   div[data-testid="stDateInput"] input {
     background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(180,80,140,0.3) !important;
     border-radius: 12px !important; color: #f0e0f0 !important; padding: 0.6rem 1rem !important;
@@ -177,6 +195,7 @@ defaults = {
     "her_name": "",
     "chosen_time": None,
     "chosen_date": None,
+    "chosen_location": None,
     "chosen_vibes": [],
     "her_notes": "",
     "email_sent": False,
@@ -185,7 +204,7 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-TOTAL_STAGES = 5
+TOTAL_STAGES = 6
 
 def step_dots(current: int):
     dots = ""
@@ -196,7 +215,7 @@ def step_dots(current: int):
 
 
 # ── Email Sender ───────────────────────────────────────────────────────────
-def send_date_results_email(name_str, date_str, time_str, vibes_str, notes_str):
+def send_date_results_email(name_str, date_str, time_str, location_str, vibes_str, notes_str):
     """Send results to Anthony's email via Gmail SMTP."""
     try:
         cfg = st.secrets["email"]
@@ -215,11 +234,12 @@ def send_date_results_email(name_str, date_str, time_str, vibes_str, notes_str):
         plain = f"""
 {display_name} said YES! Here are the date details:
 
-👤  Name:   {name_str if name_str.strip() else '(not provided)'}
-📅  Date:   {date_str}
-⏰  Time:   {time_str}
-✨  Vibe:   {vibes_str}
-💬  Notes:  {notes_str if notes_str.strip() else '(none)'}
+👤  Name:     {name_str if name_str.strip() else '(not provided)'}
+📅  Date:     {date_str}
+⏰  Time:     {time_str}
+📍  Location: {location_str}
+✨  Vibe:     {vibes_str}
+💬  Notes:    {notes_str if notes_str.strip() else '(none)'}
 
 Go get her! 🌹
 """
@@ -273,6 +293,10 @@ Go get her! 🌹
     <div class="row">
       <div class="row-icon">⏰</div>
       <div><div class="row-label">Time</div><div class="row-value">{time_str}</div></div>
+    </div>
+    <div class="row">
+      <div class="row-icon">📍</div>
+      <div><div class="row-label">Location Vibe</div><div class="row-value">{location_str}</div></div>
     </div>
     <div class="row">
       <div class="row-icon">✨</div>
@@ -670,13 +694,74 @@ elif st.session_state.stage == 3:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STAGE 4 — Choose the Vibe
+# STAGE 4 — Location Preference
 # ══════════════════════════════════════════════════════════════════════════════
 elif st.session_state.stage == 4:
     step_dots(4)
+    name = st.session_state.her_name.strip()
+    loc_q = f"Where's the vibe, {name}?" if name else "Where's the vibe?"
+    st.markdown(f"""
+    <div class="stage-card">
+      <p class="subhead">Step 3 of 4</p>
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; color:#f0d8f0; margin-bottom:0.4rem;">
+        {loc_q}
+      </h2>
+      <p class="body-text" style="font-size:0.92rem; color:rgba(210,180,205,0.7);">
+        Pick the setting that sounds most exciting to you. 📍
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.write("")
+
+    locations = [
+        ("🏡", "Keep It Local",          "Somewhere close, familiar, and cozy"),
+        ("🌆", "Go Downtown",            "City lights, good energy, somewhere lively"),
+        ("🌿", "Something Outside",      "A park, rooftop, patio, or open air"),
+        ("🗺️", "Explore Somewhere New",  "A new spot neither of us has tried"),
+        ("🎲", "Surprise Me",            "I trust you — make it a mystery"),
+    ]
+
+    for i, (icon, label, desc) in enumerate(locations):
+        is_selected = st.session_state.chosen_location == label
+        btn_class   = "loc-btn-selected" if is_selected else "loc-btn"
+        st.markdown(f'<div class="{btn_class}">', unsafe_allow_html=True)
+        if st.button(f"{icon}  {label}  —  {desc}", key=f"loc_{i}", use_container_width=True):
+            st.session_state.chosen_location = label
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if st.session_state.chosen_location:
+        st.markdown(f"""
+        <div style="text-align:center; padding:0.8rem; background:rgba(180,50,130,0.12);
+             border:1px solid rgba(200,90,160,0.3); border-radius:12px; margin:1rem 0;">
+          <span style="font-size:0.88rem; color:rgba(230,190,215,0.9);">
+            ✓ &nbsp; {st.session_state.chosen_location}
+          </span>
+        </div>
+        """, unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("Next →", type="primary", use_container_width=True):
+                st.session_state.stage = 5
+                st.rerun()
+
+    st.write("")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("← Back", type="secondary", use_container_width=True):
+            st.session_state.stage = 3
+            st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STAGE 5 — Choose the Vibe
+# ══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.stage == 5:
+    step_dots(5)
     st.markdown("""
     <div class="stage-card">
-      <p class="subhead">Step 3 of 3</p>
+      <p class="subhead">Step 4 of 4</p>
       <h2 style="font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; color:#f0d8f0; margin-bottom:0.4rem;">
         What's your date vibe?
       </h2>
@@ -719,7 +804,7 @@ elif st.session_state.stage == 4:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("Finish ✨", type="primary", use_container_width=True):
-                st.session_state.stage = 5
+                st.session_state.stage = 6
                 st.session_state.email_sent = False
                 st.rerun()
 
@@ -727,14 +812,14 @@ elif st.session_state.stage == 4:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("← Back", type="secondary", use_container_width=True):
-            st.session_state.stage = 3
+            st.session_state.stage = 4
             st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STAGE 5 — Final Screen (notes + email notification)
+# STAGE 6 — Final Screen (notes + email notification)
 # ══════════════════════════════════════════════════════════════════════════════
-elif st.session_state.stage == 5:
+elif st.session_state.stage == 6:
     st.markdown("""
     <div style="text-align:center; font-size:2rem; letter-spacing:0.5rem;
          animation: fadeUp 0.5s ease both; margin-bottom:1.5rem;">
@@ -742,11 +827,12 @@ elif st.session_state.stage == 5:
     </div>
     """, unsafe_allow_html=True)
 
-    friendly_date  = st.session_state.chosen_date.strftime("%A, %B %d, %Y") if st.session_state.chosen_date else "TBD"
-    friendly_vibes = ",  ".join(st.session_state.chosen_vibes) if st.session_state.chosen_vibes else "Surprise me!"
-    name           = st.session_state.her_name.strip()
-    final_headline = f"{name}, get ready for the<br>best date ever 🥰" if name else "Get ready for the<br>best date ever 🥰"
-    notes_prompt   = f"Anything else you want me to know, {name}? 💬" if name else "Anything else you want me to know? 💬"
+    friendly_date     = st.session_state.chosen_date.strftime("%A, %B %d, %Y") if st.session_state.chosen_date else "TBD"
+    friendly_vibes    = ",  ".join(st.session_state.chosen_vibes) if st.session_state.chosen_vibes else "Surprise me!"
+    friendly_location = st.session_state.chosen_location if st.session_state.chosen_location else "—"
+    name              = st.session_state.her_name.strip()
+    final_headline    = f"{name}, get ready for the<br>best date ever 🥰" if name else "Get ready for the<br>best date ever 🥰"
+    notes_prompt      = f"Anything else you want me to know, {name}? 💬" if name else "Anything else you want me to know? 💬"
 
     # ── Summary card ──
     st.markdown(f"""
@@ -777,6 +863,13 @@ elif st.session_state.stage == 5:
         <div>
           <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(200,155,185,0.6); margin-bottom:2px;">Time</div>
           <div style="color:#f0d8f0;">{st.session_state.chosen_time}</div>
+        </div>
+      </div>
+      <div class="summary-item">
+        <span style="font-size:1.3rem;">📍</span>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(200,155,185,0.6); margin-bottom:2px;">Location Vibe</div>
+          <div style="color:#f0d8f0;">{friendly_location}</div>
         </div>
       </div>
       <div class="summary-item">
@@ -834,6 +927,7 @@ elif st.session_state.stage == 5:
                         st.session_state.her_name,
                         friendly_date,
                         st.session_state.chosen_time,
+                        friendly_location,
                         friendly_vibes,
                         st.session_state.her_notes,
                     )
