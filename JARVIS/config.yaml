@@ -1,0 +1,248 @@
+# ============================================================
+#  J.A.R.V.I.S. — configuration
+#  TUNED FOR COST. Every change from stock is marked $ with its reason.
+# ============================================================
+
+server:
+  host: "127.0.0.1"
+  port: 8123
+  open_browser: true          # true = launching by hand from PowerShell.
+                              # Set false only if you use jarvis-hud.bat.
+
+brain:
+  model: "claude-sonnet-5"    # better screenshot/vision reasoning (triage) than haiku,
+                              # at higher cost. claude-haiku-4-5 for cheaper/faster.
+
+  effort: "low"               # low | medium | high. Thinking tokens are billed —
+                              # most turns (timers, volume, status) need no depth.
+                              # Bump to medium only when doing real analysis.
+
+  max_tokens: 500             # $ was 700. Ceiling on billed output. Replies are
+                              # 1-2 sentences, so this is never reached anyway.
+
+  history_turns: 4            # $ was 6. Every kept turn is resent as input on
+                              # EVERY subsequent request. This is a per-turn tax.
+
+  web_search: true            # billed per search, separately from tokens.
+                              # set false to save if you're not using
+                              # briefing/commute.
+
+  location:
+    city: "Livonia"
+    region: "Michigan"
+    country: "US"
+    timezone: "America/Detroit"
+
+  # $ The persona is prompt-cached, so it is cheap to keep sending — cache reads
+  #   are about a tenth the price of fresh input. DO NOT edit it mid-session;
+  #   any change invalidates the cache and you pay full price on the next turn.
+  #   Shortened to 1-2 sentences: spoken length is billed output.
+  persona: |
+    You are JARVIS, the resident AI of this workshop. You speak with dry British
+    composure: precise, unhurried, quietly amused. You address the user as "sir"
+    but sparingly — roughly once every few exchanges, never twice in a row.
+
+    Your replies are SPOKEN ALOUD. Therefore:
+      - Keep spoken text to 1-2 sentences. Never read out lists or long data.
+      - No markdown, no bullet points, no emoji, no asterisks, no URLs.
+      - Write numbers and units the way a person says them ("about forty percent",
+        "twenty-three degrees").
+      - When something needs detail, put the detail on screen with hud_display and
+        say only a one-line summary. This is the core rhythm: voice is brief,
+        the screen carries the weight.
+
+    You have real control of this machine. Use your tools rather than describing
+    what the user could do. If a request is ambiguous but low-risk, choose sensibly
+    and act. If it is destructive or irreversible, confirm first.
+
+    Never invent system readings — call get_system_status. Never guess what is on
+    screen — call capture_screen. Do not call capture_screen unless the user has
+    actually asked about the screen; it is the most expensive tool available.
+
+    When explaining an error, lead with the actual cause, not background.
+
+voice:
+  wake_word: true
+
+  # $ Every false wake is a full paid turn. 0.7 is deliberately conservative.
+  #   Raise to 0.75 if background noise still triggers it.
+  wake_threshold: 0.5
+
+  # $ 0 also saves money — no accidental second turn from a stray noise after
+  #   a reply. Raise to 12 once you have a headset, if you want conversation.
+  follow_up_window: 12
+
+  silence_ms: 900
+  max_utterance_s: 15
+
+  # Real options: 1 = C920 webcam   3 = Realtek jack   2/12 = XB13 Bluetooth
+  # null = system default, and can never be an invalid index.
+  input_device: null
+
+  # Speech recognition is LOCAL and FREE. Model size costs CPU time, not credits.
+  # Spend freely here — better transcription means fewer wasted retry turns.
+  stt_model: "small.en"
+  stt_compute: "int8"
+  stt_device: "cpu"
+  # --- RTX 4070: once CUDA works, comment the three above and uncomment these.
+  #     Needs: pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
+  # stt_model: "medium.en"
+  # stt_compute: "float16"
+  # stt_device: "cuda"
+
+tts:
+  engine: "edge"              # free, no key. elevenlabs is a third billed meter.
+  voice: "en-GB-SoniaNeural"  # try en-GB-RyanNeural, en-GB-ThomasNeural
+  rate: "+8%"
+  pitch: "-4Hz"
+  elevenlabs_voice_id: ""
+  # --- If edge returns "No audio was received", fall back with BOTH together:
+  #       engine: "pyttsx3"
+  #       voice: ""            <-- must be blank; pyttsx3 rejects Edge names
+
+# ------------------------------------------------------------
+#  Protocols — these cost NOTHING until you run one.
+#  Keeping them listed is free; only firing them spends credits.
+#  Cost per run:  launch/volume/timer = free (no API call)
+#                 ask = one full turn
+#                 ask + capture_screen = several turns' worth
+# ------------------------------------------------------------
+protocols:
+  workshop:
+    description: "Workbench setup: music, editor, project board."
+    say: "Workshop protocol. Bringing the bench online."
+    steps:                    # $ free — no ask step, no API call at all
+      - launch: spotify
+      - launch: code
+      - volume: 70
+
+  focus:
+    description: "Silence distractions and start a 50 minute work block."
+    say: "Focus protocol engaged. Fifty minutes on the clock."
+    steps:                    # $ free
+      - volume: 45
+      - timer: { minutes: 50, label: "Focus block complete" }
+
+  shutdown:
+    description: "Stand down for the night."
+    say: "Powering down the bench. Goodnight, sir."
+    steps:                    # $ free
+      - volume: 0
+
+  pomodoro:
+    description: "Four work blocks with breaks."
+    say: "Four blocks. Starting now."
+    steps:                    # $ free
+      # Timers fire at absolute offsets from when the protocol runs,
+      # so these are cumulative minutes, not durations.
+      - volume: 15
+      - timer: { minutes: 25, label: "Break — five minutes" }
+      - timer: { minutes: 30, label: "Block two" }
+      - timer: { minutes: 55, label: "Break — five minutes" }
+      - timer: { minutes: 60, label: "Block three" }
+
+  health:
+    description: "Full system check."
+    say: "Running diagnostics."
+    steps:                    # $ one turn, text only — cheap
+      - ask: "Check system status including top processes by memory. Put a
+              metrics panel and a table of the top five processes on the HUD.
+              Flag anything unusual in one sentence."
+
+  wrap:
+    description: "Close out the day."
+    say: "Wrapping up."
+    steps:                    # $ one turn, text only — cheap
+      - ask: "Ask me what I got done today, then store the answer in memory with
+              today's date. Check system status and mention anything that looks
+              off. Keep it to two sentences."
+      - volume: 0
+
+  bench:
+    description: "Lab session setup."
+    say: "Bench is live."
+    steps:                    # $ one turn, text only — cheap
+      - launch: code
+      - ask: "Search memory for anything about my emissions testing work and
+              remind me of the relevant details on the HUD. One sentence aloud."
+
+  # $$ EXPENSIVE — vision. A screenshot costs several times a text turn even
+  #    after the 1400px downsample. Genuinely useful for stack traces; just
+  #    don't fire it out of curiosity.
+  triage:
+    description: "Read what's on screen and explain it. (costs more)"
+    say: "Taking a look."
+    steps:
+      - ask: "Capture the screen. If there is an error, stack trace, or dialog,
+              explain what it means and the most likely fix. Put the detail on
+              the HUD as a text panel. Two sentences aloud, no more."
+
+  # $$ These two need brain.web_search: true above, which is currently OFF.
+  #    Web search is billed per search on top of tokens. Uncomment both the
+  #    protocols and the web_search flag together if you want them back.
+  #
+  # briefing:
+  #   description: "Morning briefing: system health plus the day's news."
+  #   say: "Compiling your briefing."
+  #   steps:
+  #     - ask: "Give me a morning briefing. Check system status, then search the
+  #             web for today's top technology headlines. Put the headlines on
+  #             the HUD as a list panel and summarise in two sentences."
+  #
+  # commute:
+  #   description: "Weather and roads before heading out."
+  #   say: "Checking outside."
+  #   steps:
+  #     - ask: "Search for current weather and any major traffic incidents around
+  #             Livonia, Michigan. Put both on the HUD as a list panel. Tell me
+  #             in one sentence whether to leave early."
+
+# ------------------------------------------------------------
+#  App aliases — launching costs nothing. Add as many as you like.
+#  Paths need DOUBLE backslashes and quotes: "C:\\Users\\antho\\Labs"
+# ------------------------------------------------------------
+apps:
+  spotify: "spotify"
+  code: "code"
+  vscode: "code"
+  editor: "code"
+  chrome: "chrome"
+  browser: "chrome"
+  explorer: "explorer"
+  terminal: "wt"
+  calculator: "calc"
+  notes: "notepad"
+  steam: "steam"
+  discord: "discord"
+  github: "https://github.com"
+  youtube: "https://youtube.com"
+  gmail: "https://mail.google.com"
+  console: "https://console.anthropic.com"
+
+  # labs: "C:\\Users\\antho\\OneDrive\\Desktop\\Labs"
+  # lectures: "C:\\Users\\antho\\OneDrive\\Desktop\\Lectures"
+  # work: "C:\\Users\\antho\\OneDrive\\Desktop\\Work Stuff"
+
+# ------------------------------------------------------------
+#  File access for search_files / read_file / write_file.
+#  Two SEPARATE lists on purpose — read can be broad, write should stay
+#  narrow. Nothing is readable or writable until listed here. write_file
+#  also refuses to touch Jarvis's own install folder no matter what's
+#  listed below — that check is hard-coded in tools.py, not configurable.
+# ------------------------------------------------------------
+files:
+  allowed_dirs:                 # read — search_files / read_file
+    - "C:\\Users\\antho\\OneDrive\\Documents"
+    - "C:\\Users\\antho\\OneDrive\\Pictures"
+    - "C:\\Users\\antho\\OneDrive\\Desktop\\Claude"
+
+  write_dirs:                   # write — create_file / overwrite / append.
+                                 # Keep this to folders you're fine having
+                                 # Jarvis create or change files in.
+    - "C:\\Users\\antho\\OneDrive\\Documents"
+    - "C:\\Users\\antho\\OneDrive\\Pictures"
+    - "C:\\Users\\antho\\OneDrive\\Desktop\\Claude"
+
+safety:
+  allow_shell: false
+  confirm_destructive: true
