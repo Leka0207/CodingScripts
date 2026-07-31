@@ -6,6 +6,8 @@
 ===============================================================================
 
  Requirements:   pip install pygame numpy
+                 (on Python 3.14+ use "pip install pygame-ce numpy" instead --
+                  pygame-ce is a drop-in replacement and ships newer wheels)
  Run:            python chess3d.py
 
  Features
@@ -51,7 +53,11 @@ try:
     import pygame
     import pygame.gfxdraw
 except ImportError:
-    sys.exit("This game needs pygame.  Install it with:  pip install pygame")
+    sys.exit("This game needs pygame.  Install it with:\n"
+             "    pip install pygame\n"
+             "If that fails to build (common on Python 3.14 and newer), use the\n"
+             "community edition instead - it is a drop-in replacement:\n"
+             "    pip install pygame-ce")
 
 
 # =============================================================================
