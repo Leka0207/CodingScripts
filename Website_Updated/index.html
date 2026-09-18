@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anthony Akel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#eef1ee;
+    --surface:#ffffff;
+    --surface-2:#e6e9e5;
+    --ink:#141f1c;
+    --ink-muted:#52645f;
+    --accent:#2f6b5e;
+    --accent-ink:#ffffff;
+    --accent-2:#a5670c;
+    --line:#c7d0cb;
+    --line-strong:#a8b3ac;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0c1310;
+      --surface:#121c18;
+      --surface-2:#182420;
+      --ink:#e8efe9;
+      --ink-muted:#93a89f;
+      --accent:#57b8d6;
+      --accent-ink:#06181d;
+      --accent-2:#e3a94a;
+      --line:#233029;
+      --line-strong:#324139;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1310;
+    --surface:#121c18;
+    --surface-2:#182420;
+    --ink:#e8efe9;
+    --ink-muted:#93a89f;
+    --accent:#57b8d6;
+    --accent-ink:#06181d;
+    --accent-2:#e3a94a;
+    --line:#233029;
+    --line-strong:#324139;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
+    padding-inline:24px;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  a{color:inherit;}
+  h1,h2,h3{margin:0; text-wrap:balance;}
+  p{margin:0;}
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:3px; border-radius:2px; }
+
+  .wrap{ max-width:960px; margin-inline:auto; }
+
+  /* ---------- nav ---------- */
+  .nav{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding-block:14px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav .wrap{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .mark{
+    font-family:'Big Shoulders Display', sans-serif; font-weight:800;
+    font-size:22px; letter-spacing:0.02em; line-height:1;
+    display:flex; align-items:center; gap:8px;
+  }
+  .mark .dot{ width:7px; height:7px; border-radius:999px; background:var(--accent); display:inline-block; }
+  .nav-links{ display:none; gap:22px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; }
+  .nav-links a{ text-decoration:none; color:var(--ink-muted); border-bottom:1px solid transparent; padding-bottom:3px; transition:color .15s, border-color .15s; }
+  .nav-links a:hover{ color:var(--ink); border-color:var(--accent); }
+  @media (min-width:760px){ .nav-links{ display:flex; } }
+  .theme-btn{
+    width:34px; height:34px; border-radius:8px; border:1px solid var(--line-strong);
+    background:var(--surface); color:var(--ink); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex:none;
+  }
+  .theme-btn svg{ width:16px; height:16px; }
+
+  /* ---------- hero ---------- */
+  .hero{ padding-block:56px 40px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--accent-2); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{ content:""; width:18px; height:1px; background:var(--accent-2); display:inline-block; }
+  .hero h1{
+    font-family:'Big Shoulders Display', sans-serif; font-weight:800;
+    font-size:clamp(48px, 11vw, 104px); line-height:0.92; letter-spacing:-0.01em;
+    text-transform:uppercase;
+  }
+  .hero .role{
+    font-family:'IBM Plex Mono', monospace; font-size:clamp(14px,2.4vw,17px);
+    color:var(--ink-muted); margin-top:10px;
+  }
+  .hero p.lede{
+    max-width:58ch; font-size:clamp(16px,2vw,18px); line-height:1.6; color:var(--ink-muted);
+    margin-top:20px;
+  }
+  .cta-row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.03em;
+    padding:11px 18px; border-radius:6px; text-decoration:none; border:1px solid var(--line-strong);
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .btn:hover{ transform:translateY(-1px); border-color:var(--accent); }
+  .btn svg{ width:15px; height:15px; }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:0 8px 20px -10px color-mix(in srgb, var(--accent) 55%, transparent); }
+
+  .gauges{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:14px; margin-top:40px;
+  }
+  .gauge{ background:var(--surface); padding:18px 20px; border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .gauge .val{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; font-size:20px; font-weight:600; color:var(--accent); }
+  .gauge .lab{ font-size:12.5px; color:var(--ink-muted); margin-top:6px; line-height:1.4; }
+
+  /* ---------- section framing ---------- */
+  section{ padding-block:52px; border-top:1px solid var(--line); }
+  .section-head{ display:flex; align-items:baseline; gap:16px; margin-bottom:28px; }
+  .section-head .idx{ font-family:'IBM Plex Mono', monospace; color:var(--accent); font-size:13px; }
+  .section-head h2{ font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:28px; letter-spacing:0.01em; text-transform:uppercase; }
+  .section-head .leader{ flex:1; height:1px; background:var(--line-strong); }
+
+  .prose{ max-width:70ch; font-size:16.5px; line-height:1.75; color:var(--ink-muted); }
+  .prose strong{ color:var(--ink); }
+
+  /* ---------- experience / education ---------- */
+  .entry{ display:grid; grid-template-columns:150px 1fr; gap:24px; padding-block:22px; border-bottom:1px solid var(--line); }
+  .entry:last-child{ border-bottom:none; }
+  .entry .when{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
+  .entry .org{ font-weight:700; font-size:17px; }
+  .entry .role{ color:var(--accent); font-size:13.5px; font-family:'IBM Plex Mono', monospace; margin-top:2px; }
+  .entry .place{ color:var(--ink-muted); font-size:13px; margin-top:2px; }
+  .entry ul{ margin:12px 0 0; padding-left:18px; color:var(--ink-muted); font-size:15px; line-height:1.65; }
+  .entry ul li{ margin-bottom:6px; }
+  .entry ul li::marker{ color:var(--accent); }
+  @media (max-width:600px){ .entry{ grid-template-columns:1fr; gap:6px; } }
+
+  /* ---------- projects ---------- */
+  .proj-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:14px; }
+  .proj{ background:var(--surface); padding:26px; border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .proj-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .proj h3{ font-size:19px; font-weight:700; }
+  .proj .link{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--accent); text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; padding-top:3px; }
+  .proj .link:hover{ text-decoration:underline; }
+  .proj ul{ margin:14px 0 0; padding-left:18px; color:var(--ink-muted); font-size:15px; line-height:1.6; }
+  .proj ul li{ margin-bottom:5px; }
+  .proj ul li::marker{ color:var(--accent-2); }
+  .tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .tag{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-muted); border:1px solid var(--line-strong); border-radius:4px; padding:4px 8px; }
+
+  /* ---------- more-projects grid ---------- */
+  .more-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:14px; }
+  .more-card{ background:var(--surface); padding:18px 20px; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; gap:6px; border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.05); transition:background .12s ease; }
+  .more-card:hover{ background:var(--surface-2); }
+  .more-card .name{ font-weight:600; font-size:14.5px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .more-card .name svg{ width:13px; height:13px; color:var(--ink-muted); flex:none; }
+  .more-card .desc{ font-size:13px; color:var(--ink-muted); line-height:1.5; }
+  .more-card .path{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--accent-2); }
+
+  /* ---------- skills ---------- */
+  .skill-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:22px 32px; }
+  .skill-group .h{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+  .skill-group .items{ display:flex; flex-wrap:wrap; gap:8px; }
+  .skill-group .items span{ font-size:13.5px; padding:5px 10px; border:1px solid var(--line-strong); border-radius:4px; color:var(--ink-muted); }
+
+  /* ---------- certifications ---------- */
+  .cert-list{ display:flex; flex-direction:column; }
+  .cert{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid var(--line); font-size:15px; }
+  .cert:last-child{ border-bottom:none; }
+  .cert .n{ font-weight:600; }
+  .cert .i{ color:var(--ink-muted); font-size:13.5px; }
+  .cert .d{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* ---------- contact / footer ---------- */
+  .contact-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px; }
+  .contact-card{ background:var(--surface); padding:20px; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; gap:8px; border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .contact-card:hover{ background:var(--surface-2); }
+  .contact-card .l{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-muted); display:flex; align-items:center; gap:8px; }
+  .contact-card .l svg{ width:14px; height:14px; }
+  .contact-card .v{ font-weight:600; font-size:15px; word-break:break-word; }
+
+  footer{ padding-block:32px 48px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-muted); }
+
+  .fade-in{ animation: fadeIn .5s ease both; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+
+  /* ---------- depth & motion ---------- */
+  .gauge, .proj, .more-card, .contact-card{ transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease; will-change:transform; }
+  .gauge:hover, .proj:hover, .more-card:hover, .contact-card:hover{
+    box-shadow: 0 16px 32px -16px color-mix(in srgb, var(--accent) 50%, transparent), 0 1px 2px rgba(0,0,0,.05);
+    border-color: var(--accent);
+  }
+  .gauges, .proj-grid, .more-grid, .contact-grid{ perspective:900px; }
+
+  .btn{ position:relative; overflow:hidden; }
+  .btn::after{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .25s ease;
+    background: radial-gradient(160px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.35), transparent 62%);
+  }
+  .btn:hover::after{ opacity:1; }
+
+  .section-head .leader{ position:relative; overflow:hidden; }
+  .section-head .leader::after{
+    content:""; position:absolute; top:0; left:-30%; width:26%; height:100%; opacity:.6;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation:leaderSweep 7s ease-in-out infinite;
+  }
+  @keyframes leaderSweep{ 0%{ left:-30%;} 55%{ left:112%;} 100%{ left:112%;} }
+
+  .hero h1{ text-shadow: 0 0 70px color-mix(in srgb, var(--accent) 24%, transparent); }
+  .hero-grid{ display:grid; grid-template-columns:1.15fr 0.9fr; gap:32px; align-items:center; }
+  @media (max-width:860px){ .hero-grid{ grid-template-columns:1fr; } .hero-visual{ max-width:260px; margin-top:4px; } }
+  .hero-visual{ position:relative; aspect-ratio:1/1; max-width:420px; margin-inline:auto; }
+  .hero-visual canvas{ width:100%; height:100%; display:block; }
+  .hero-visual::before{
+    content:""; position:absolute; inset:-18%; z-index:-1; filter:blur(34px);
+    background:radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%);
+    animation: pulseGlow 5s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{ 0%,100%{ opacity:.75; } 50%{ opacity:1; } }
+
+  /* ---------- tech strip ---------- */
+  .strip{ overflow:hidden; border-block:1px solid var(--line); padding-block:12px; margin-inline:-24px; padding-inline:24px;
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image:linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+  .strip-track{ display:flex; gap:36px; width:max-content; animation:strip 45s linear infinite; }
+  .strip-track span{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-muted); white-space:nowrap; }
+  .strip-track span::before{ content:"·"; color:var(--accent); margin-right:14px; }
+  @keyframes strip{ to{ transform:translateX(-50%); } }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap">
+    <a href="#top" class="mark" style="text-decoration:none;"><span class="dot"></span>AA</a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#experience">Experience</a>
+      <a href="#projects">Projects</a>
+      <a href="#github">GitHub</a>
+      <a href="#skills">Skills</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle color theme" type="button">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+    </button>
+  </div>
+</nav>
+
+<div class="wrap" id="top">
+
+  <section class="hero" style="border-top:none; padding-block-start:0;">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Application Engineer — Test Automation &amp; Emissions Systems</div>
+        <h1>Anthony<br>Akel</h1>
+        <div class="role">Application Engineer @ HORIBA · M.S. Computer Science (AI), Wayne State University</div>
+        <p class="lede">I build automation software and data-driven tools for vehicle test systems by day, and ship AI, robotics, and web projects on my own time. This is a working record of both — for recruiters who want the real specs.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="mailto:anthonya19033@gmail.com">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 6-10 7L2 6"></path></svg>
+            Email Anthony
+          </a>
+          <a class="btn" href="https://github.com/Leka0207/CodingScripts" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.1 3.29 9.4 7.86 10.93.57.1.78-.25.78-.55v-2.14c-3.2.7-3.87-1.36-3.87-1.36-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.58.24 2.75.12 3.04.74.8 1.19 1.82 1.19 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16v3.2c0 .3.2.66.79.55A10.52 10.52 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>
+            View GitHub
+          </a>
+          <a class="btn" href="https://www.linkedin.com/in/anthonyakel/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"></path></svg>
+            LinkedIn
+          </a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <canvas id="heroGlobe"></canvas>
+      </div>
+    </div>
+    <div class="gauges">
+      <div class="gauge"><div class="val">HORIBA</div><div class="lab">Application Engineer, since May 2025</div></div>
+      <div class="gauge"><div class="val">10+</div><div class="lab">Coding projects across AI, robotics &amp; web</div></div>
+      <div class="gauge"><div class="val">M.S. CS/AI</div><div class="lab">Wayne State University, in progress</div></div>
+    </div>
+  </section>
+
+  <div class="strip" aria-label="Technologies"><div class="strip-track" id="stripTrack"></div></div>
+
+  <section id="about" class="fade-in">
+    <div class="section-head"><span class="idx">01</span><h2>About</h2><span class="leader"></span></div>
+    <p class="prose">Application engineer with a strong foundation in <strong>software development, data processing, and automation</strong>. Proficient in C/C++/C#, Python, SQL, and HTML, with hands-on experience in cloud computing, database management, and version control. Focused on solving real problems and building scalable software in collaborative engineering environments — currently deepening that work with graduate study in AI.</p>
+  </section>
+
+  <section id="experience" class="fade-in">
+    <div class="section-head"><span class="idx">02</span><h2>Experience</h2><span class="leader"></span></div>
+    <div class="entry">
+      <div class="when">MAY 2025 —<br>PRESENT</div>
+      <div>
+        <div class="org">HORIBA</div>
+        <div class="role">Application Engineer</div>
+        <div class="place">Ann Arbor, United States</div>
+        <ul>
+          <li>Commission new HORIBA Test Automation Systems and upgrade existing systems at customer facilities</li>
+          <li>Translate technical documents into functional system setups, ensuring automation software correctly operates test instruments</li>
+          <li>Help customers resolve technical issues, test new software features, and contribute to developing new tools and system enhancements</li>
+        </ul>
+      </div>
+    </div>
+    <div class="entry">
+      <div class="when">JAN 2024 —<br>AUG 2024</div>
+      <div>
+        <div class="org">MAHLE</div>
+        <div class="role">Test Bench Engineering Intern</div>
+        <div class="place">Troy, United States</div>
+        <ul>
+          <li>Collaborated with engineering teams to design and execute simulations, collecting and analyzing test bench data</li>
+          <li>Developed control software for an Arduino-driven closed-loop pressure regulator integrated with BDAS interfaces</li>
+          <li>Automated data extraction and processing using VBA macros in Excel, reducing test report turnaround time by 30%</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects" class="fade-in">
+    <div class="section-head"><span class="idx">03</span><h2>Featured Projects</h2><span class="leader"></span></div>
+    <div class="proj-grid">
+      <div class="proj">
+        <div class="proj-top">
+          <h3>Gesture-Controlled Robotic Arm System</h3>
+          <a class="link" href="https://github.com/Leka0207/CodingScripts/tree/main/KDL" target="_blank" rel="noopener">/CodingScripts/KDL ↗</a>
+        </div>
+        <ul>
+          <li>Developed a ROS-based robotic arm with 1&nbsp;cm servo accuracy, leveraging a real-time pub-sub architecture in Python</li>
+          <li>Used a Leap Motion 2 sensor for hand-gesture recognition, achieving 80% accuracy within 1&nbsp;mm of target positioning</li>
+          <li>Optimized inverse kinematics computation using KDL and NumPy, enhancing real-time responsiveness</li>
+        </ul>
+        <div class="tags"><span class="tag">Python</span><span class="tag">ROS / ROS2</span><span class="tag">KDL</span><span class="tag">NumPy</span><span class="tag">Leap Motion</span></div>
+      </div>
+      <div class="proj">
+        <div class="proj-top">
+          <h3>AI Voice Assistant</h3>
+          <a class="link" href="https://github.com/Leka0207/CodingScripts/tree/main/JARVIS" target="_blank" rel="noopener">/CodingScripts/JARVIS ↗</a>
+        </div>
+        <ul>
+          <li>Desktop voice assistant in Python using the Claude API, FastAPI, and WebSockets, with a real-time full-screen HUD</li>
+          <li>Designed a speech pipeline with openWakeWord wake-word detection, faster-whisper STT, and Edge neural TTS</li>
+          <li>Implemented a tool-calling agent loop for system control, screen vision, web search, and persistent SQLite memory</li>
+        </ul>
+        <div class="tags"><span class="tag">Python</span><span class="tag">Claude API</span><span class="tag">FastAPI</span><span class="tag">WebSockets</span><span class="tag">faster-whisper</span><span class="tag">SQLite</span></div>
+      </div>
+      <div class="proj">
+        <div class="proj-top">
+          <h3>NLP Text Insights Dashboard</h3>
+          <a class="link" href="https://github.com/Leka0207/CodingScripts" target="_blank" rel="noopener">/CodingScripts ↗</a>
+        </div>
+        <ul>
+          <li>Built an interactive NLP web app in Streamlit for real-time text analysis, including file upload and dynamic word-frequency visualizations</li>
+          <li>Applied core NLP techniques using NLTK to extract quantitative insight from text</li>
+          <li>Used readability metrics via textstat, with pandas for structured data aggregation</li>
+        </ul>
+        <div class="tags"><span class="tag">Python</span><span class="tag">Streamlit</span><span class="tag">NLTK</span><span class="tag">textstat</span><span class="tag">pandas</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="github" class="fade-in">
+    <div class="section-head"><span class="idx">04</span><h2>More on GitHub</h2><span class="leader"></span></div>
+    <p class="prose" style="margin-bottom:22px;">A running personal repo of smaller builds across languages — <strong>github.com/Leka0207/CodingScripts</strong>.</p>
+    <div class="more-grid" id="moreGrid"></div>
+  </section>
+
+  <section id="skills" class="fade-in">
+    <div class="section-head"><span class="idx">05</span><h2>Skills</h2><span class="leader"></span></div>
+    <div class="skill-grid">
+      <div class="skill-group"><div class="h">Programming</div><div class="items"><span>C</span><span>C++</span><span>C#</span><span>Python</span><span>MATLAB</span><span>SQL</span><span>LabVIEW</span></div></div>
+      <div class="skill-group"><div class="h">Automation &amp; Data Processing</div><div class="items"><span>ROS / ROS2</span><span>Simulink</span><span>VBA</span><span>Pandas</span><span>NumPy</span></div></div>
+      <div class="skill-group"><div class="h">Software &amp; Tools</div><div class="items"><span>Node.js</span><span>.NET</span><span>Streamlit</span><span>Jupyter Notebook</span></div></div>
+      <div class="skill-group"><div class="h">Database Management</div><div class="items"><span>IBM Db2</span><span>MSSQL Server</span><span>MySQL</span></div></div>
+      <div class="skill-group"><div class="h">ML &amp; Data Analysis</div><div class="items"><span>ML (Python)</span><span>Data Visualization</span><span>KPI Implementation</span></div></div>
+      <div class="skill-group"><div class="h">Cloud &amp; DevOps</div><div class="items"><span>Google Cloud</span><span>Git</span><span>GitHub</span><span>GitBash</span></div></div>
+    </div>
+  </section>
+
+  <section id="education" class="fade-in">
+    <div class="section-head"><span class="idx">06</span><h2>Education</h2><span class="leader"></span></div>
+    <div class="entry">
+      <div class="when">JAN 2026 —<br>PRESENT</div>
+      <div>
+        <div class="org">Wayne State University</div>
+        <div class="role">M.S. Computer Science — AI Concentration</div>
+        <div class="place">Detroit, United States</div>
+      </div>
+    </div>
+    <div class="entry">
+      <div class="when">AUG 2020 —<br>DEC 2024</div>
+      <div>
+        <div class="org">University of Michigan–Dearborn</div>
+        <div class="role">B.S. Computer Engineering · GPA 3.3</div>
+        <div class="place">Dearborn, United States</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="certifications" class="fade-in">
+    <div class="section-head"><span class="idx">07</span><h2>Certifications</h2><span class="leader"></span></div>
+    <div class="cert-list">
+      <div class="cert"><div><div class="n">Generative AI Fundamentals</div><div class="i">Databricks</div></div><div class="d">JUL 2024</div></div>
+      <div class="cert"><div><div class="n">SQL and Relational Databases</div><div class="i">Cognitive Class</div></div><div class="d">SEP 2024</div></div>
+      <div class="cert"><div><div class="n">Machine Learning with Python</div><div class="i">IBM Skills Network</div></div><div class="d">OCT 2024</div></div>
+      <div class="cert"><div><div class="n">Python for Data Science</div><div class="i">IBM Skills Network</div></div><div class="d">SEP 2024</div></div>
+    </div>
+  </section>
+
+  <section id="contact" class="fade-in">
+    <div class="section-head"><span class="idx">08</span><h2>Contact</h2><span class="leader"></span></div>
+    <div class="contact-grid">
+      <a class="contact-card" href="mailto:anthonya19033@gmail.com">
+        <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 6-10 7L2 6"></path></svg>Email</div>
+        <div class="v">anthonya19033@gmail.com</div>
+      </a>
+      <a class="contact-card" href="tel:2484446295">
+        <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.95.36 1.88.68 2.78a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.83.55 2.78.68A2 2 0 0 1 22 16.92z"></path></svg>Phone</div>
+        <div class="v">248-444-6295</div>
+      </a>
+      <a class="contact-card" href="https://github.com/Leka0207/CodingScripts" target="_blank" rel="noopener">
+        <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.1 3.29 9.4 7.86 10.93.57.1.78-.25.78-.55v-2.14c-3.2.7-3.87-1.36-3.87-1.36-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.58.24 2.75.12 3.04.74.8 1.19 1.82 1.19 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16v3.2c0 .3.2.66.79.55A10.52 10.52 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>GitHub</div>
+        <div class="v">github.com/Leka0207/CodingScripts</div>
+      </a>
+      <a class="contact-card" href="https://www.linkedin.com/in/anthonyakel/" target="_blank" rel="noopener">
+        <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"></path></svg>LinkedIn</div>
+        <div class="v">linkedin.com/in/anthonyakel</div>
+      </a>
+      <div class="contact-card" style="cursor:default;">
+        <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>Based in</div>
+        <div class="v">Metro Detroit, MI</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>© <span id="year"></span> Anthony Akel</span>
+    <span>Built from source — resume &amp; github.com/Leka0207</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('aa-theme');
+    if(saved === 'light' || saved === 'dark'){ document.documentElement.setAttribute('data-theme', saved); }
+  }catch(e){}
+
+  function currentIsDark(){
+    var attr = document.documentElement.getAttribute('data-theme');
+    if(attr === 'dark') return true;
+    if(attr === 'light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  var btn = document.getElementById('themeBtn');
+  var icon = document.getElementById('themeIcon');
+  var sunPath = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+  var moonPath = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"></path>';
+
+  function paintIcon(){ icon.innerHTML = currentIsDark() ? moonPath : sunPath; }
+  paintIcon();
+
+  btn.addEventListener('click', function(){
+    var next = currentIsDark() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('aa-theme', next); }catch(e){}
+    paintIcon();
+  });
+
+  var yearEl = document.getElementById('year');
+  if(yearEl) yearEl.textContent = new Date().getFullYear();
+
+  var more = [
+    { name:'CreditCardFraudML', path:'CreditCardFraudML', desc:'Machine learning model for detecting fraudulent card transactions.' },
+    { name:'OlympicMedalPredictor_ML', path:'OlympicMedalPredictor_ML', desc:'Predictive model estimating Olympic medal outcomes from historical data.' },
+    { name:'StockPredictorML', path:'StockPredictorML', desc:'ML-driven model for forecasting stock price movement.' },
+    { name:'Stock Predictor Web App', path:'Stock%20Predictor%20Web%20App', desc:'Web front end for exploring stock price forecasts.' },
+    { name:'S&P500_app', path:'S%26P500_app', desc:'Application tracking and analyzing the S&P 500 index.' },
+    { name:'ChessGame', path:'ChessGame', desc:'A playable chess implementation built from scratch.' },
+    { name:'checkersgame', path:'checkersgame', desc:'A playable checkers implementation built from scratch.' },
+    { name:'WeatherApp', path:'WeatherApp', desc:'App for fetching and displaying live weather data.' },
+    { name:'Calculator Webpage', path:'Calculator%20Webpage', desc:'A browser-based calculator built with HTML, CSS &amp; JS.' }
+  ];
+
+  var grid = document.getElementById('moreGrid');
+  if(grid){
+    grid.innerHTML = more.map(function(p){
+      return '<a class="more-card" href="https://github.com/Leka0207/CodingScripts/tree/main/'+p.path+'" target="_blank" rel="noopener">'
+        + '<div class="name">' + p.name + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"></path></svg></div>'
+        + '<div class="desc">' + p.desc + '</div>'
+        + '<div class="path">/CodingScripts/' + p.name + '</div>'
+        + '</a>';
+    }).join('');
+  }
+
+  /* ---- tech strip (doubled for seamless loop) ---- */
+  var strip = document.getElementById('stripTrack');
+  if(strip){
+    var tech = ['Python','C / C++ / C#','SQL','ROS / ROS2','Claude API','FastAPI','WebSockets','Streamlit','NumPy','Pandas','MATLAB','LabVIEW','Simulink','.NET','Node.js','MySQL','MSSQL Server','IBM Db2','Google Cloud','Git'];
+    strip.innerHTML = tech.concat(tech).map(function(t){ return '<span>' + t + '</span>'; }).join('');
+  }
+
+  /* ---- 3D tilt on cards ---- */
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function attachTilt(el){
+    el.addEventListener('pointermove', function(e){
+      if(reduceMotion) return;
+      var r = el.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width - 0.5;
+      var py = (e.clientY - r.top) / r.height - 0.5;
+      el.style.transform = 'perspective(700px) rotateX(' + (py * -7).toFixed(2) + 'deg) rotateY(' + (px * 7).toFixed(2) + 'deg) translateY(-2px) scale(1.015)';
+    });
+    el.addEventListener('pointerleave', function(){ el.style.transform = ''; });
+  }
+  document.querySelectorAll('.gauge, .proj, .more-card, .contact-card').forEach(attachTilt);
+
+  /* ---- magnetic glow on buttons ---- */
+  document.querySelectorAll('.btn').forEach(function(el){
+    el.addEventListener('pointermove', function(e){
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+  });
+
+  /* ---- hero: rotating 3D wireframe globe ---- */
+  (function heroGlobe(){
+    var canvas = document.getElementById('heroGlobe');
+    if(!canvas || !canvas.getContext) return;
+    var ctx = canvas.getContext('2d');
+    var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize(){
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * DPR));
+      canvas.height = Math.max(1, Math.round(rect.height * DPR));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var N = 70;
+    var pts = [];
+    var golden = Math.PI * (3 - Math.sqrt(5));
+    for(var i = 0; i < N; i++){
+      var y = 1 - (i / (N - 1)) * 2;
+      var rad = Math.sqrt(Math.max(0, 1 - y * y));
+      var theta = golden * i;
+      pts.push({ x: Math.cos(theta) * rad, y: y, z: Math.sin(theta) * rad });
+    }
+    var edgeSet = {};
+    var edgeList = [];
+    for(var a = 0; a < N; a++){
+      var dists = [];
+      for(var b = 0; b < N; b++){
+        if(a === b) continue;
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, dz = pts[a].z - pts[b].z;
+        dists.push({ j: b, d: dx*dx + dy*dy + dz*dz });
+      }
+      dists.sort(function(m, n){ return m.d - n.d; });
+      for(var k = 0; k < 3; k++){
+        var j = dists[k].j;
+        var key = a < j ? a + '_' + j : j + '_' + a;
+        if(!edgeSet[key]){ edgeSet[key] = true; edgeList.push([a, j]); }
+      }
+    }
+
+    var autoRot = 0, curTiltX = 0, curTiltY = 0, targetTiltX = 0, targetTiltY = 0;
+    var wrap = canvas.closest('.hero-visual');
+    if(wrap && !reduceMotion){
+      wrap.addEventListener('pointermove', function(e){
+        var r = wrap.getBoundingClientRect();
+        targetTiltY = ((e.clientX - r.left) / r.width - 0.5) * 0.7;
+        targetTiltX = ((e.clientY - r.top) / r.height - 0.5) * -0.7;
+      });
+      wrap.addEventListener('pointerleave', function(){ targetTiltX = 0; targetTiltY = 0; });
+    }
+
+    function project(p, w, h, rotY, rotX){
+      var cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      var x1 = p.x * cosY - p.z * sinY;
+      var z1 = p.x * sinY + p.z * cosY;
+      var cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      var y1 = p.y * cosX - z1 * sinX;
+      var z2 = p.y * sinX + z1 * cosX;
+      var scale = 1.6 / (1.6 + z2);
+      return { x: w / 2 + x1 * scale * (w * 0.42), y: h / 2 + y1 * scale * (h * 0.42), z: z2 };
+    }
+
+    function accentColor(){
+      return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#57b8d6';
+    }
+
+    function draw(rotY, rotX){
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      var proj = pts.map(function(p){ return project(p, w, h, rotY, rotX); });
+      var accent = accentColor();
+      ctx.lineWidth = Math.max(1, DPR * 0.8);
+      for(var e = 0; e < edgeList.length; e++){
+        var p1 = proj[edgeList[e][0]], p2 = proj[edgeList[e][1]];
+        var depth = (p1.z + p2.z) / 2;
+        ctx.globalAlpha = Math.max(0.05, Math.min(0.5, 0.3 + depth * 0.32));
+        ctx.strokeStyle = accent;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+      for(var pI = 0; pI < proj.length; pI++){
+        var p = proj[pI];
+        var r = Math.max(1, (1.1 + p.z * 1.3) * DPR);
+        ctx.globalAlpha = Math.max(0.25, Math.min(1, 0.55 + p.z * 0.5));
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function frame(){
+      autoRot += reduceMotion ? 0 : 0.0032;
+      curTiltX += (targetTiltX - curTiltX) * 0.06;
+      curTiltY += (targetTiltY - curTiltY) * 0.06;
+      draw(autoRot + curTiltY, 0.45 + curTiltX);
+      if(!reduceMotion) requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+})();
+</script>
+</body>
+</html>
