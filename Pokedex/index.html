@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>National Pokédex</title>
+<meta name="description" content="Search every Pokémon and form, Megas, Gigantamax and regional variants included, from Red and Blue to Legends: Z-A. Live data from PokéAPI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://pokeapi.co">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a field instrument — sticky scanner bar, browse grid, and a detail "readout" tinted by the Pokémon's primary type. */
+:root{
+  --bg:#F2F3F6; --surface:#FFFFFF; --surface-2:#E9EBF0; --ink:#141720; --muted:#565D6E; --line:#D7DAE2;
+  --accent:#D3301C; --accent-ink:#FFFFFF; --lens:#2C7BE5; --lens-hi:#9CC8FF;
+  --good:#2E9E5B; --warn:#D9921A; --bad:#D3301C;
+  --f-display:"Chakra Petch", "Rajdhani", system-ui, sans-serif;
+  --f-body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:14px; --r-sm:8px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C0F15; --surface:#141922; --surface-2:#1B212D; --ink:#E7EAF1; --muted:#9BA3B6; --line:#283042;
+  --accent:#FF5A42; --accent-ink:#140806; --lens:#4F98FF; --lens-hi:#BFDCFF;
+  --good:#4CC57E; --warn:#F0B040; --bad:#FF5A42; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C0F15; --surface:#141922; --surface-2:#1B212D; --ink:#E7EAF1; --muted:#9BA3B6; --line:#283042;
+  --accent:#FF5A42; --accent-ink:#140806; --lens:#4F98FF; --lens-hi:#BFDCFF;
+  --good:#4CC57E; --warn:#F0B040; --bad:#FF5A42; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);min-height:100vh;display:flex;flex-direction:column}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--lens);outline-offset:2px;border-radius:6px}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Header */
+.bar{position:sticky;top:0;z-index:20;background:color-mix(in oklab,var(--surface) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar::after{content:"";display:block;height:3px;background:var(--accent)}
+.bar .wrap{display:flex;align-items:center;gap:16px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-height:44px}
+.brand svg{flex:none}
+.brand b{font:700 1.25rem/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase}
+.brand small{display:block;font:500 .7rem/1.2 var(--f-mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.search{flex:1 1 320px;position:relative;min-width:0}
+.search label{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex;pointer-events:none}
+.search input{width:100%;min-height:46px;padding:10px 14px 10px 44px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:1rem}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{outline:none;border-color:var(--lens);box-shadow:0 0 0 3px color-mix(in oklab,var(--lens) 30%,transparent)}
+.icon-btn{min-width:44px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-grid;place-items:center;cursor:pointer}
+.icon-btn:hover{background:var(--surface-2)}
+
+/* Browse */
+main{flex:1}
+.browse-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between;padding-block:28px 16px}
+.browse-head h1{font:700 clamp(1.8rem,4vw,2.6rem)/1.05 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance}
+.browse-head p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-bottom:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;border:0;margin:0;padding:0}
+.seg legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);cursor:pointer;font-weight:500;font-size:.92rem;transition:background .15s,border-color .15s}
+.seg label span{font:500 .75rem var(--f-mono);color:var(--muted)}
+.seg input:checked+label{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg input:checked+label span{color:inherit;opacity:.75}
+.seg input:focus-visible+label{outline:3px solid var(--lens);outline-offset:2px}
+.selects{display:flex;gap:10px;flex-wrap:wrap}
+.selects label{display:flex;flex-direction:column;font:500 .7rem/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);gap:4px}
+select{min-height:40px;padding:6px 32px 6px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);font-size:.95rem;text-transform:none;letter-spacing:0;color:var(--ink)}
+.count{font:500 .8rem var(--f-mono);color:var(--muted);margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding-bottom:48px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 10px 14px;content-visibility:auto;contain-intrinsic-size:auto 200px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.card:hover{transform:translateY(-3px);border-color:color-mix(in oklab,var(--lens) 55%,var(--line));box-shadow:0 10px 24px -14px color-mix(in oklab,var(--ink) 40%,transparent)}
+.card .num{align-self:flex-start;font:500 .75rem var(--f-mono);color:var(--muted)}
+.card img{width:112px;height:112px;object-fit:contain;margin:4px 0 8px}
+.card .nm{font-weight:600;text-align:center;line-height:1.25;font-size:.95rem}
+.badge{position:absolute;top:10px;right:10px;font:600 .66rem/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.badge.mega{background:color-mix(in oklab,#9B59F0 20%,var(--surface));color:color-mix(in oklab,#9B59F0 70%,var(--ink))}
+.badge.gmax{background:color-mix(in oklab,var(--accent) 18%,var(--surface));color:color-mix(in oklab,var(--accent) 75%,var(--ink))}
+.badge.regional{background:color-mix(in oklab,var(--lens) 18%,var(--surface));color:color-mix(in oklab,var(--lens) 75%,var(--ink))}
+.empty,.status{padding:48px 0;text-align:center;color:var(--muted);grid-column:1/-1}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--surface-2)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.skel{background:linear-gradient(90deg,var(--surface-2),var(--surface),var(--surface-2));background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:var(--r-sm)}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* Detail */
+.detail{padding-block:20px 56px;display:flex;flex-direction:column;gap:20px}
+.crumbs{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:stretch}
+.art{position:relative;border-radius:calc(var(--r) + 6px);overflow:hidden;min-height:340px;display:grid;place-items:center;
+  background:radial-gradient(120% 90% at 50% 40%,color-mix(in oklab,var(--t1) 34%,var(--surface)) 0%,color-mix(in oklab,var(--t2) 14%,var(--surface)) 60%,var(--surface) 100%);border:1px solid color-mix(in oklab,var(--t1) 35%,var(--line))}
+.art .wm{position:absolute;left:14px;bottom:-.12em;font:700 clamp(4.5rem,13vw,9rem)/1 var(--f-display);color:color-mix(in oklab,var(--t1) 22%,transparent);letter-spacing:-.02em;pointer-events:none;user-select:none}
+.art img{position:relative;width:min(84%,380px);height:auto;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 18px 22px color-mix(in oklab,var(--ink) 28%,transparent))}
+.art-tools{position:absolute;top:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.art-tools .btn{background:color-mix(in oklab,var(--surface) 82%,transparent);backdrop-filter:blur(6px)}
+.info{background:var(--surface);border:1px solid var(--line);border-radius:calc(var(--r) + 6px);padding:22px clamp(16px,3vw,28px);display:flex;flex-direction:column;gap:14px;min-width:0}
+.dexno{font:500 .8rem var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:0}
+.info h1{font:700 clamp(2.1rem,5vw,3.4rem)/1 var(--f-display);margin:0;text-wrap:balance;letter-spacing:.005em}
+.genus{margin:-6px 0 0;color:var(--muted);font-weight:500}
+.types{display:flex;gap:8px;flex-wrap:wrap}
+.type{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font:600 .8rem/1.2 var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:var(--tc);color:var(--tx)}
+.type.sm{padding:3px 9px;font-size:.7rem}
+.type i{font:600 .72rem var(--f-mono);font-style:normal;opacity:.9}
+.flavor{margin:0;font-size:1.02rem;max-width:62ch}
+.flavor cite{display:block;margin-top:4px;font:500 .75rem var(--f-mono);color:var(--muted);font-style:normal}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px 18px;margin:4px 0 0}
+.facts div{min-width:0}
+.facts dt,.kv dt{font:500 .68rem var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.facts dd,.kv dd{margin:2px 0 0;font-weight:600;font-variant-numeric:tabular-nums}
+.facts dd small,.kv dd small{font-weight:400;color:var(--muted)}
+.flags{display:flex;gap:6px;flex-wrap:wrap}
+.flag{font:600 .7rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:6px;border:1px solid var(--line)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px clamp(16px,3vw,24px);min-width:0}
+.panel h2{font:700 1.25rem/1.2 var(--f-display);margin:0 0 14px;letter-spacing:.02em;text-transform:uppercase;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.panel h2 small{font:500 .75rem var(--f-mono);color:var(--muted);text-transform:none;letter-spacing:0}
+.panel h3{font:600 .8rem var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 8px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.muted{color:var(--muted)}
+
+.forms{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.form{flex:none;display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border:1px solid var(--line);border-radius:999px;background:var(--surface);text-decoration:none;font-weight:600;font-size:.9rem;min-height:48px}
+.form img{width:40px;height:40px;object-fit:contain}
+.form[aria-current="page"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+
+.stats{display:grid;grid-template-columns:auto 3.2ch minmax(0,1fr);gap:8px 12px;align-items:center;font-variant-numeric:tabular-nums;margin:0}
+.stats dt{font:500 .8rem var(--f-mono);color:var(--muted)}
+.stats dd{margin:0;font-weight:600;text-align:right}
+.bar-track{height:10px;border-radius:999px;background-color:var(--surface-2);overflow:hidden;background-image:repeating-linear-gradient(90deg,transparent 0 calc(19.6% - 1px),color-mix(in oklab,var(--line) 80%,transparent) calc(19.6% - 1px) 19.6%)}
+.bar-fill{height:100%;border-radius:999px;background:var(--c);transform-origin:left;animation:grow .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.stats .total{grid-column:1/-1;display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin-top:2px;font-weight:600}
+.stats .total span{font:500 .8rem var(--f-mono);color:var(--muted)}
+.def-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+
+.evo{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:4px 2px 8px}
+.evo-col{display:flex;flex-direction:column;gap:10px}
+.evo-branch{display:flex;align-items:center;gap:8px}
+.evo-node{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:8px 10px;border-radius:var(--r);border:1px solid transparent;min-width:120px;flex:none}
+.evo-node:hover,.evo-node[aria-current="page"]{border-color:var(--line);background:var(--surface-2)}
+.evo-node img{width:88px;height:88px;object-fit:contain}
+.evo-node b{font-size:.92rem;text-align:center}
+.evo-node span{font:500 .7rem var(--f-mono);color:var(--muted)}
+.evo-arrow{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font:500 .72rem/1.3 var(--f-mono);text-align:center;max-width:130px;min-width:70px;flex:none}
+.evo-arrow svg{color:var(--accent)}
+
+.gen-row{display:grid;grid-template-columns:7.5ch minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line);align-items:baseline}
+.gen-row:first-child{border-top:0}
+.gen-row b{font:600 .78rem var(--f-mono);color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:3px 10px;border-radius:999px;background:var(--surface-2);font-size:.85rem;font-weight:500}
+.chip.za{background:color-mix(in oklab,#9B59F0 22%,var(--surface))}
+
+details.enc{border-top:1px solid var(--line)}
+details.enc:first-child{border-top:0}
+details.enc summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:600;list-style:none}
+details.enc summary::-webkit-details-marker{display:none}
+details.enc summary span{font:500 .75rem var(--f-mono);color:var(--muted)}
+details.enc ul{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:6px}
+details.enc li{display:flex;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;font-size:.92rem;padding:6px 10px;background:var(--surface-2);border-radius:var(--r-sm)}
+details.enc li small{font:500 .75rem var(--f-mono);color:var(--muted)}
+
+.moves-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:var(--r-sm)}
+table{width:100%;border-collapse:collapse;font-size:.92rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--surface-2);font:600 .7rem var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);z-index:1}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+.dc{font:600 .7rem var(--f-mono);text-transform:uppercase;letter-spacing:.05em;padding:3px 7px;border-radius:6px;background:var(--surface-2)}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px 20px;margin:0}
+.gender{display:flex;height:8px;border-radius:999px;overflow:hidden;margin-top:6px;background:var(--surface-2);max-width:160px}
+.gender i{display:block;height:100%}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.abil{display:grid;gap:8px}
+.abil div{font-size:.92rem}
+.abil em{font:600 .66rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-left:6px}
+.abil p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+
+footer{border-top:1px solid var(--line);padding-block:20px 28px;color:var(--muted);font-size:.85rem}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:820px){.hero,.two{grid-template-columns:minmax(0,1fr)}.art{min-height:280px}}
+@media (max-width:640px){.brand{flex:1}.search{order:3;flex-basis:100%}}
+@media (max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}.card img{width:92px;height:92px}.brand small{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#/" aria-label="National Pokédex home">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5"/>
+        <circle cx="20" cy="20" r="12" fill="var(--lens)"/>
+        <circle cx="16" cy="15.5" r="4" fill="var(--lens-hi)" opacity=".8"/>
+      </svg>
+      <span><b>National Pokédex</b><small>Gen I → Legends: Z-A</small></span>
+    </a>
+    <form class="search" role="search" id="searchForm">
+      <label for="q"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr">Search Pokémon by name or number</span></label>
+      <input id="q" type="search" placeholder="Search by name or number: Charizard, mega, 448" autocomplete="off" spellcheck="false">
+    </form>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle dark mode">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <section id="browse" class="wrap" aria-labelledby="browseTitle">
+    <div class="browse-head">
+      <div>
+        <h1 id="browseTitle">Every Pokémon, every form</h1>
+        <p>All species from Red and Blue through Legends: Z-A, plus Mega Evolutions, Gigantamax and regional variants. Pick one to see its full Pokédex entry.</p>
+      </div>
+    </div>
+    <div class="filters">
+      <fieldset class="seg" id="catSeg">
+        <legend>Form type</legend>
+      </fieldset>
+      <div class="selects">
+        <label for="genSel">Generation
+          <select id="genSel"><option value="">All generations</option></select>
+        </label>
+        <label for="typeSel">Type
+          <select id="typeSel"><option value="">All types</option></select>
+        </label>
+      </div>
+    </div>
+    <p class="count" id="count" aria-live="polite">Loading the National Pokédex…</p>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section id="detail" class="wrap detail" hidden></section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Unofficial fan project. Data and sprites from <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokéAPI</a>, no API key required.</span>
+    <span>Pokémon and character names are trademarks of Nintendo, Creatures and Game Freak.</span>
+  </div>
+</footer>
+
+<script>
+"use strict";
+const API = "https://pokeapi.co/api/v2/";
+const SPR = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+const imgChain = id => [`${SPR}other/official-artwork/${id}.png`, `${SPR}other/home/${id}.png`, `${SPR}${id}.png`];
+const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#8a90a0" stroke-width="5" stroke-dasharray="8 7"/><text x="50" y="62" font-size="34" text-anchor="middle" fill="#8a90a0" font-family="sans-serif">?</text></svg>');
+
+/* ---------- Fetch + cache (PokéAPI's fair-use policy asks clients to cache) ---------- */
+const mem = new Map();
+let cacheStore = null;
+const cacheReady = (async () => { try { if ("caches" in window) cacheStore = await caches.open("pokedex-v1"); } catch (_) {} })();
+function api(path, persist = true) {
+  const url = path.startsWith("http") ? path : API + path;
+  if (mem.has(url)) return mem.get(url);
+  const p = (async () => {
+    await cacheReady;
+    if (persist && cacheStore) { try { const hit = await cacheStore.match(url); if (hit) return await hit.json(); } catch (_) {} }
+    const r = await fetch(url);
+    if (r.status === 404) throw new Error("not-found");
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    if (persist && cacheStore) cacheStore.put(url, r.clone()).catch(() => {});
+    return r.json();
+  })();
+  mem.set(url, p);
+  p.catch(() => mem.delete(url));
+  return p;
+}
+// Run async jobs with a small concurrency cap so we never flood the API.
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const it = items[i++]; try { await fn(it); } catch (_) {} } }));
+}
+
+/* ---------- Reference data ---------- */
+// [color, super-effective against, not very effective against, no effect on]
+const TYPES = {
+  normal:["#9FA19F",[],["rock","steel"],["ghost"]],
+  fire:["#E62829",["grass","ice","bug","steel"],["fire","water","rock","dragon"],[]],
+  water:["#2980EF",["fire","ground","rock"],["water","grass","dragon"],[]],
+  electric:["#FAC000",["water","flying"],["electric","grass","dragon"],["ground"]],
+  grass:["#3FA129",["water","ground","rock"],["fire","grass","poison","flying","bug","dragon","steel"],[]],
+  ice:["#3DCEF3",["grass","ground","flying","dragon"],["fire","water","ice","steel"],[]],
+  fighting:["#FF8000",["normal","ice","rock","dark","steel"],["poison","flying","psychic","bug","fairy"],["ghost"]],
+  poison:["#9141CB",["grass","fairy"],["poison","ground","rock","ghost"],["steel"]],
+  ground:["#915121",["fire","electric","poison","rock","steel"],["grass","bug"],["flying"]],
+  flying:["#81B9EF",["grass","fighting","bug"],["electric","rock","steel"],[]],
+  psychic:["#EF4179",["fighting","poison"],["psychic","steel"],["dark"]],
+  bug:["#91A119",["grass","psychic","dark"],["fire","fighting","poison","flying","ghost","steel","fairy"],[]],
+  rock:["#AFA981",["fire","ice","flying","bug"],["fighting","ground","steel"],[]],
+  ghost:["#704170",["psychic","ghost"],["dark"],["normal"]],
+  dragon:["#5060E1",["dragon"],["steel"],["fairy"]],
+  dark:["#624D4E",["psychic","ghost"],["fighting","dark","fairy"],[]],
+  steel:["#60A1B8",["ice","rock","fairy"],["fire","water","electric","steel"],[]],
+  fairy:["#EF70EF",["fighting","dragon","dark"],["fire","poison","steel"],[]],
+};
+const typeColor = t => (TYPES[t] || ["#888888"])[0];
+function textOn(hex) { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111" : "#fff"; }
+function typeChip(t, extra = "", cls = "") { const c = typeColor(t); return `<span class="type ${cls}" style="--tc:${c};--tx:${textOn(c)}">${esc(t)}${extra}</span>`; }
+function defenses(types) {
+  const out = {};
+  for (const atk in TYPES) {
+    let m = 1;
+    const [, se, nve, no] = TYPES[atk];
+    for (const d of types) { if (se.includes(d)) m *= 2; else if (nve.includes(d)) m *= 0.5; else if (no.includes(d)) m = 0; }
+    out[atk] = m;
+  }
+  return out;
+}
+
+const GENS = [[1,151,"Kanto"],[152,251,"Johto"],[252,386,"Hoenn"],[387,493,"Sinnoh"],[494,649,"Unova"],[650,721,"Kalos"],[722,809,"Alola"],[810,905,"Galar"],[906,1025,"Paldea"]];
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX"];
+const genOf = n => { const i = GENS.findIndex(([a, b]) => n >= a && n <= b); return i < 0 ? GENS.length : i + 1; };
+
+// Version groups in release order. Unknown future groups still display (title-cased) at the end.
+const VGS = [
+  ["red-blue",1,["red","blue"]],["yellow",1,["yellow"]],["gold-silver",2,["gold","silver"]],["crystal",2,["crystal"]],
+  ["ruby-sapphire",3,["ruby","sapphire"]],["emerald",3,["emerald"]],["firered-leafgreen",3,["firered","leafgreen"]],["colosseum",3,["colosseum"]],["xd",3,["xd"]],
+  ["diamond-pearl",4,["diamond","pearl"]],["platinum",4,["platinum"]],["heartgold-soulsilver",4,["heartgold","soulsilver"]],
+  ["black-white",5,["black","white"]],["black-2-white-2",5,["black-2","white-2"]],
+  ["x-y",6,["x","y"]],["omega-ruby-alpha-sapphire",6,["omega-ruby","alpha-sapphire"]],
+  ["sun-moon",7,["sun","moon"]],["ultra-sun-ultra-moon",7,["ultra-sun","ultra-moon"]],["lets-go-pikachu-lets-go-eevee",7,["lets-go-pikachu","lets-go-eevee"]],
+  ["sword-shield",8,["sword","shield"]],["the-isle-of-armor",8,["the-isle-of-armor"]],["the-crown-tundra",8,["the-crown-tundra"]],
+  ["brilliant-diamond-shining-pearl",8,["brilliant-diamond","shining-pearl"]],["brilliant-diamond-and-shining-pearl",8,["brilliant-diamond","shining-pearl"]],["legends-arceus",8,["legends-arceus"]],
+  ["scarlet-violet",9,["scarlet","violet"]],["the-teal-mask",9,["the-teal-mask"]],["the-indigo-disk",9,["the-indigo-disk"]],
+  ["legends-za",9,["legends-za"]],["mega-dimension",9,["mega-dimension"]],
+];
+const VG = Object.fromEntries(VGS.map(([n, g, v], i) => [n, { gen: g, versions: v, order: i }]));
+const VERSION_ORDER = [...new Set(VGS.flatMap(v => v[2]))];
+const VERSION_GEN = Object.fromEntries(VGS.flatMap(([, g, vs]) => vs.map(v => [v, g])));
+const VNAME = { firered:"FireRed", leafgreen:"LeafGreen", heartgold:"HeartGold", soulsilver:"SoulSilver", "lets-go-pikachu":"Let’s Go, Pikachu!", "lets-go-eevee":"Let’s Go, Eevee!",
+  "legends-arceus":"Legends: Arceus", "legends-za":"Legends: Z-A", "mega-dimension":"Mega Dimension (DLC)", "the-isle-of-armor":"The Isle of Armor", "the-crown-tundra":"The Crown Tundra",
+  "the-teal-mask":"The Teal Mask", "the-indigo-disk":"The Indigo Disk", xd:"XD: Gale of Darkness" };
+const versionName = v => VNAME[v] || tc(v);
+const vgName = vg => VG[vg] ? VG[vg].versions.map(versionName).join(" / ") : tc(vg);
+const vOrder = v => { const i = VERSION_ORDER.indexOf(v); return i < 0 ? 999 : i; };
+
+const STAT = { hp:"HP", attack:"Attack", defense:"Defense", "special-attack":"Sp. Atk", "special-defense":"Sp. Def", speed:"Speed" };
+const REG = { alola:"Alolan", galar:"Galarian", hisui:"Hisuian", paldea:"Paldean" };
+const SPECIAL = { "mr-mime":"Mr. Mime","mime-jr":"Mime Jr.","mr-rime":"Mr. Rime","nidoran-f":"Nidoran♀","nidoran-m":"Nidoran♂","farfetchd":"Farfetch’d","sirfetchd":"Sirfetch’d",
+  "ho-oh":"Ho-Oh","porygon-z":"Porygon-Z","type-null":"Type: Null","jangmo-o":"Jangmo-o","hakamo-o":"Hakamo-o","kommo-o":"Kommo-o","flabebe":"Flabébé",
+  "wo-chien":"Wo-Chien","chien-pao":"Chien-Pao","ting-lu":"Ting-Lu","chi-yu":"Chi-Yu" };
+const CATS = [["all","All"],["base","Base species"],["mega","Mega & Primal"],["gmax","Gigantamax"],["regional","Regional"],["other","Other forms"]];
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const tc = s => String(s || "").split("-").map(cap).join(" ");
+const pad = n => String(n).padStart(4, "0");
+const idFromUrl = u => +u.replace(/\/$/, "").split("/").pop();
+const en = (arr, key = "name") => (arr || []).find(x => x.language?.name === "en")?.[key];
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+function category(name, id) {
+  if (id <= 10000) return "base";
+  if (/-totem|-cap$|-cap-/.test(name)) return "other";
+  if (/-(mega|primal)(-|$)/.test(name)) return "mega";
+  if (/-gmax$/.test(name)) return "gmax";
+  if (/-(alola|galar|hisui|paldea)(-|$)/.test(name)) return "regional";
+  return "other";
+}
+function pretty(name, base) {
+  base = base || name;
+  const b = SPECIAL[base] || tc(base);
+  if (name === base) return b;
+  const parts = name.slice(base.length + 1).split("-").filter(Boolean), pre = [];
+  if (parts[0] === "mega") { pre.push("Mega"); parts.shift(); }
+  else if (parts[0] === "primal") { pre.push("Primal"); parts.shift(); }
+  else if (parts[0] === "gmax") { pre.push("Gigantamax"); parts.shift(); }
+  else if (REG[parts[0]]) { pre.push(REG[parts[0]]); parts.shift(); }
+  if (parts[parts.length - 1] === "gmax") { pre.unshift("Gigantamax"); parts.pop(); }
+  return [...pre, b, ...parts.map(cap)].join(" ");
+}
+// <img> with automatic fallback: official artwork → HOME render → game sprite → placeholder
+function img(id, alt, cls = "", w = 112) {
+  return `<img class="${cls}" src="${imgChain(id)[0]}" data-id="${id}" data-step="0" alt="${esc(alt)}" width="${w}" height="${w}" loading="lazy" decoding="async">`;
+}
+document.addEventListener("error", e => {
+  const el = e.target;
+  if (el.tagName !== "IMG" || !el.dataset.id) return;
+  const step = +el.dataset.step + 1, chain = imgChain(el.dataset.id);
+  el.dataset.step = step;
+  if (step >= chain.length) { delete el.dataset.id; el.src = PLACEHOLDER; } else el.src = chain[step];
+}, true);
+
+/* ---------- Theme ---------- */
+(function theme() {
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("dex-theme"); if (t) root.dataset.theme = t; } catch (_) {}
+  $("#themeBtn").addEventListener("click", () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("dex-theme", root.dataset.theme); } catch (_) {}
+  });
+})();
+
+/* ---------- Browse ---------- */
+let INDEX = [], BY_NAME = new Map(), BY_DEX = new Map();
+const state = { q: "", cat: "all", gen: "", type: "", typeSet: null };
+
+async function loadIndex() {
+  const { results } = await api("pokemon?limit=100000", false);
+  const all = results.map(r => ({ name: r.name, id: idFromUrl(r.url) }));
+  // Map form names ("charizard-mega-x", "deoxys-attack") back to their base species.
+  const keys = new Map();
+  for (const p of all) if (p.id <= 10000) keys.set(p.name, p.id);
+  for (const p of all) if (p.id <= 10000) { const seg = p.name.split("-"); for (let i = seg.length - 1; i > 0; i--) { const k = seg.slice(0, i).join("-"); if (!keys.has(k)) keys.set(k, p.id); } }
+  for (const p of all) {
+    let base = p.name;
+    if (p.id > 10000) { const seg = p.name.split("-"); for (let i = seg.length - 1; i > 0; i--) { const k = seg.slice(0, i).join("-"); if (keys.has(k)) { base = k; break; } } }
+    p.dex = p.id <= 10000 ? p.id : (keys.get(base) || 0);
+    p.cat = category(p.name, p.id);
+    p.label = pretty(p.name, base);
+    p.gen = p.dex ? genOf(p.dex) : 0;
+    p.search = norm(p.label) + " " + p.name;
+  }
+  all.sort((a, b) => a.dex - b.dex || a.id - b.id);
+  INDEX = all;
+  BY_NAME = new Map(all.map(p => [p.name, p]));
+  BY_DEX = new Map(all.filter(p => p.id <= 10000).map(p => [p.id, p]));
+}
+
+function buildFilters() {
+  const counts = { all: INDEX.length };
+  for (const p of INDEX) counts[p.cat] = (counts[p.cat] || 0) + 1;
+  $("#catSeg").insertAdjacentHTML("beforeend", CATS.map(([k, l]) =>
+    `<input type="radio" name="cat" id="cat-${k}" value="${k}" ${k === state.cat ? "checked" : ""}><label for="cat-${k}">${l} <span>${(counts[k] || 0).toLocaleString()}</span></label>`).join(""));
+  $("#genSel").insertAdjacentHTML("beforeend", GENS.map((g, i) => `<option value="${i + 1}">Gen ${ROMAN[i]} · ${g[2]}</option>`).join(""));
+  $("#typeSel").insertAdjacentHTML("beforeend", Object.keys(TYPES).map(t => `<option value="${t}">${cap(t)}</option>`).join(""));
+  $("#catSeg").addEventListener("change", e => { state.cat = e.target.value; renderGrid(); });
+  $("#genSel").addEventListener("change", e => { state.gen = e.target.value; renderGrid(); });
+  $("#typeSel").addEventListener("change", async e => {
+    const t = e.target.value;
+    state.type = t; state.typeSet = null;
+    if (t) {
+      $("#count").textContent = `Loading ${cap(t)}-type Pokémon…`;
+      try { const d = await api("type/" + t); if (state.type !== t) return; state.typeSet = new Set(d.pokemon.map(x => x.pokemon.name)); }
+      catch (_) { $("#count").textContent = "Couldn’t load that type. Check your connection and try again."; return; }
+    }
+    renderGrid();
+  });
+}
+
+function matches(p) {
+  if (state.cat !== "all" && p.cat !== state.cat) return false;
+  if (state.gen && p.gen !== +state.gen) return false;
+  if (state.typeSet && !state.typeSet.has(p.name)) return false;
+  if (state.q.trim()) {
+    const q = norm(state.q).replace(/^#/, "");
+    if (/^\d+$/.test(q)) return p.dex === +q;
+    const slug = q.replace(/[.'’:]/g, "").replace(/\s+/g, "-");
+    return p.search.includes(q) || p.name.includes(slug);
+  }
+  return true;
+}
+const filtered = () => INDEX.filter(matches);
+const BADGE = { mega: "Mega", gmax: "G-Max", other: "Form" };
+function card(p) {
+  const regional = p.cat === "regional" ? (Object.entries(REG).find(([k]) => new RegExp(`-${k}(-|$)`).test(p.name)) || [, "Regional"])[1] : "";
+  const badge = p.cat === "base" ? "" : `<span class="badge ${p.cat}">${regional || BADGE[p.cat]}</span>`;
+  return `<a class="card" href="#/p/${p.name}">${badge}<span class="num">${p.dex ? "#" + pad(p.dex) : "&nbsp;"}</span>${img(p.id, "")}<span class="nm">${esc(p.label)}</span></a>`;
+}
+function renderGrid() {
+  const list = filtered();
+  $("#grid").innerHTML = list.length ? list.map(card).join("") : `<div class="empty">No Pokémon match. Try a different name, or clear the filters.</div>`;
+  $("#count").textContent = `Showing ${list.length.toLocaleString()} of ${INDEX.length.toLocaleString()} Pokémon and forms`;
+}
+
+const q = $("#q");
+let qTimer;
+q.addEventListener("input", () => {
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => {
+    state.q = q.value;
+    if (location.hash.startsWith("#/p/")) { if (q.value.trim()) location.hash = "#/"; }
+    else if (INDEX.length) renderGrid();
+  }, 120);
+});
+$("#searchForm").addEventListener("submit", e => {
+  e.preventDefault();
+  clearTimeout(qTimer); // don't let a pending keystroke update bounce us back to the grid
+  state.q = q.value;
+  const first = INDEX.length ? filtered()[0] : null;
+  if (first) location.hash = "#/p/" + first.name;
+  else if (q.value.trim()) location.hash = "#/p/" + norm(q.value).replace(/[.'’:]/g, "").replace(/\s+/g, "-");
+});
+
+/* ---------- Detail ---------- */
+let routeTok = 0, browseScroll = 0;
+const detailEl = $("#detail"), browseEl = $("#browse");
+
+function showBrowse() {
+  routeTok++;
+  document.title = "National Pokédex";
+  if (!browseEl.hidden) return;
+  detailEl.hidden = true; detailEl.innerHTML = ""; browseEl.hidden = false;
+  if (INDEX.length) renderGrid();
+  requestAnimationFrame(() => window.scrollTo(0, browseScroll));
+}
+
+async function showDetail(name) {
+  const tok = ++routeTok;
+  if (!browseEl.hidden) browseScroll = window.scrollY;
+  browseEl.hidden = true; detailEl.hidden = false; window.scrollTo(0, 0);
+  detailEl.innerHTML = `<div class="hero"><div class="art skel"></div><div class="info"><div class="skel" style="height:18px;width:30%"></div><div class="skel" style="height:48px;width:60%"></div><div class="skel" style="height:90px"></div><div class="skel" style="height:120px"></div></div></div>`;
+  try {
+    let p;
+    try { p = await api("pokemon/" + name); }
+    catch (e) {
+      if (e.message !== "not-found") throw e;
+      const s = await api("pokemon-species/" + name);
+      p = await api(s.varieties.find(v => v.is_default).pokemon.url);
+    }
+    const s = await api(p.species.url);
+    if (tok !== routeTok) return;
+    renderDetail(p, s, tok);
+  } catch (e) {
+    if (tok !== routeTok) return;
+    const nf = e.message === "not-found";
+    detailEl.innerHTML = `<div class="status"><p>${nf ? `No Pokémon called “${esc(name)}” was found. Check the spelling or browse the full list.` : "Couldn’t reach PokéAPI. Check your connection and try again."}</p>
+      <p><a class="btn" href="#/">Browse all Pokémon</a> ${nf ? "" : `<button class="btn" type="button" id="retry">Try again</button>`}</p></div>`;
+    $("#retry")?.addEventListener("click", () => showDetail(name));
+  }
+}
+
+function fmtHeight(dm) { const m = dm / 10, inch = Math.round(m * 39.3701); return `${m.toFixed(1)} m <small>${Math.floor(inch / 12)}′${inch % 12}″</small>`; }
+function fmtWeight(hg) { const kg = hg / 10; return `${kg.toFixed(1)} kg <small>${(kg * 2.20462).toFixed(1)} lb</small>`; }
+const statColor = v => v < 50 ? "var(--bad)" : v < 80 ? "var(--warn)" : v < 110 ? "var(--good)" : "var(--lens)";
+const mult = m => m === 0.25 ? "¼" : m === 0.5 ? "½" : String(m);
+
+function renderDetail(p, s, tok) {
+  const types = [...p.types].sort((a, b) => a.slot - b.slot).map(t => t.type.name);
+  const dex = s.id, gen = genOf(dex);
+  const spName = en(s.names) || pretty(s.name);
+  const genus = en(s.genera, "genus") || "";
+  const ft = (s.flavor_text_entries || []).filter(f => f.language.name === "en").pop();
+  const art = p.sprites?.other?.["official-artwork"] || {};
+  const home = p.sprites?.other?.home || {};
+  const artUrl = art.front_default || home.front_default || p.sprites?.front_default || PLACEHOLDER;
+  const shinyUrl = art.front_shiny || home.front_shiny || p.sprites?.front_shiny || "";
+  const total = p.stats.reduce((a, x) => a + x.base_stat, 0);
+  const ev = p.stats.filter(x => x.effort).map(x => `${x.effort} ${STAT[x.stat.name] || tc(x.stat.name)}`).join(", ") || "None";
+  const def = defenses(types);
+  const grp = f => Object.entries(def).filter(([, m]) => f(m)).sort((a, b) => b[1] - a[1]);
+  const chipsFor = list => list.length ? list.map(([t, m]) => typeChip(t, ` <i>×${mult(m)}</i>`, "sm")).join("") : `<span class="muted">None</span>`;
+  const female = s.gender_rate * 12.5;
+  const genderTxt = s.gender_rate < 0 ? "Genderless" : `${100 - female}% ♂ · ${female}% ♀`;
+  const genderBar = s.gender_rate < 0 ? "" : `<span class="gender" aria-hidden="true"><i style="width:${100 - female}%;background:var(--lens)"></i><i style="width:${female}%;background:#EF70EF"></i></span>`;
+  const flags = [s.is_legendary && "Legendary", s.is_mythical && "Mythical", s.is_baby && "Baby"].filter(Boolean);
+  const prev = BY_DEX.get(dex - 1), next = BY_DEX.get(dex + 1);
+  const cry = p.cries?.latest || p.cries?.legacy;
+  const varieties = s.varieties || [];
+  const vgsHere = [...new Set(p.moves.flatMap(m => m.version_group_details.map(d => d.version_group.name)))]
+    .sort((a, b) => (VG[a]?.order ?? 999) - (VG[b]?.order ?? 999));
+
+  document.title = `${spName} · National Pokédex`;
+  detailEl.style.setProperty("--t1", typeColor(types[0]));
+  detailEl.style.setProperty("--t2", typeColor(types[1] || types[0]));
+
+  detailEl.innerHTML = `
+  <div class="crumbs">
+    <a class="btn" href="#/"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>All Pokémon</a>
+  </div>
+  <div class="hero">
+    <div class="art">
+      <span class="wm" aria-hidden="true">${pad(dex)}</span>
+      <img id="artImg" src="${esc(artUrl)}" alt="Official artwork of ${esc(spName)}" width="380" height="380" onerror="this.onerror=null;this.src=PLACEHOLDER">
+      <div class="art-tools">
+        ${shinyUrl ? `<button class="btn" type="button" id="shinyBtn" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>Shiny</button>` : ""}
+        ${cry ? `<button class="btn" type="button" id="cryBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Cry</button>` : ""}
+      </div>
+    </div>
+    <div class="info">
+      <p class="dexno">No. ${pad(dex)} · Gen ${ROMAN[gen - 1] || "?"} · ${GENS[gen - 1]?.[2] || ""}</p>
+      <h1 id="pname">${esc(spName)}</h1>
+      <p class="genus" id="psub">${esc(genus)}</p>
+      <div class="types">${types.map(t => typeChip(t)).join("")}</div>
+      ${ft ? `<p class="flavor">${esc(ft.flavor_text.replace(/[\f\n\r­]+/g, " "))}<cite>Pokédex entry · Pokémon ${esc(versionName(ft.version.name))}</cite></p>` : ""}
+      <dl class="facts">
+        <div><dt>Height</dt><dd>${fmtHeight(p.height)}</dd></div>
+        <div><dt>Weight</dt><dd>${fmtWeight(p.weight)}</dd></div>
+        <div><dt>Gender</dt><dd>${genderTxt}${genderBar}</dd></div>
+        <div><dt>Catch rate</dt><dd>${s.capture_rate ?? "—"} <small>/ 255</small></dd></div>
+        <div><dt>Base exp.</dt><dd>${p.base_experience ?? "—"}</dd></div>
+        <div><dt>EV yield</dt><dd>${esc(ev)}</dd></div>
+      </dl>
+      ${flags.length ? `<div class="flags">${flags.map(f => `<span class="flag">${f}</span>`).join("")}</div>` : ""}
+    </div>
+  </div>
+
+  ${varieties.length > 1 ? `<section class="panel" aria-labelledby="hForms"><h2 id="hForms">Forms <small>${varieties.length} varieties</small></h2>
+    <nav class="forms" aria-label="Forms of ${esc(spName)}">${varieties.map(v => {
+      const id = idFromUrl(v.pokemon.url), entry = BY_NAME.get(v.pokemon.name);
+      return `<a class="form" href="#/p/${v.pokemon.name}" ${v.pokemon.name === p.name ? 'aria-current="page"' : ""}>${img(id, "", "", 40)}${esc(entry?.label || pretty(v.pokemon.name, s.name))}</a>`; }).join("")}</nav></section>` : ""}
+
+  <div class="two">
+    <section class="panel" aria-labelledby="hStats"><h2 id="hStats">Base stats</h2>
+      <dl class="stats">${p.stats.map(x => `<dt>${STAT[x.stat.name] || tc(x.stat.name)}</dt><dd>${x.base_stat}</dd><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, x.base_stat / 255 * 100)}%;--c:${statColor(x.base_stat)}"></div></div>`).join("")}
+        <div class="total"><span>Total</span>${total}</div></dl>
+      <h3>Abilities</h3><div class="abil" id="abil">${p.abilities.map(a => `<div><b>${esc(tc(a.ability.name))}</b>${a.is_hidden ? "<em>Hidden</em>" : ""}</div>`).join("") || `<span class="muted">No abilities in this game.</span>`}</div>
+    </section>
+    <section class="panel" aria-labelledby="hDef"><h2 id="hDef">Type defenses <small>damage taken</small></h2>
+      <h3>Weak to</h3><div class="def-row">${chipsFor(grp(m => m > 1))}</div>
+      <h3>Resists</h3><div class="def-row">${chipsFor(grp(m => m > 0 && m < 1))}</div>
+      <h3>Immune to</h3><div class="def-row">${chipsFor(grp(m => m === 0))}</div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="hEvo"><h2 id="hEvo">Evolution</h2><div id="evo"><div class="skel" style="height:120px"></div></div></section>
+
+  <section class="panel" aria-labelledby="hGames"><h2 id="hGames">Games <small>appearances recorded in PokéAPI</small></h2><div id="games"></div><div id="dexnums"></div></section>
+
+  <section class="panel" aria-labelledby="hEnc"><h2 id="hEnc">Where to find it <small>wild encounters by game</small></h2><div id="enc"><div class="skel" style="height:60px"></div></div></section>
+
+  <section class="panel" aria-labelledby="hMoves"><h2 id="hMoves">Moves</h2>
+    ${vgsHere.length ? `<div class="moves-tools">
+      <div class="selects"><label for="vgSel">Game<select id="vgSel">${vgsHere.map(v => `<option value="${v}">${esc(vgName(v))}</option>`).join("")}</select></label>
+      <label for="mSel">Learned by<select id="mSel"></select></label></div></div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Lv.</th><th scope="col">Move</th><th scope="col">Type</th><th scope="col">Cat.</th><th scope="col" class="r">Power</th><th scope="col" class="r">Acc.</th><th scope="col" class="r">PP</th></tr></thead><tbody id="moveBody"></tbody></table></div>` : `<p class="muted">PokéAPI has no move data for this form yet.</p>`}
+  </section>
+
+  <section class="panel" aria-labelledby="hTrain"><h2 id="hTrain">Training &amp; breeding</h2>
+    <dl class="kv">
+      <div><dt>Base friendship</dt><dd>${s.base_happiness ?? "—"}</dd></div>
+      <div><dt>Growth rate</dt><dd>${esc(tc(s.growth_rate?.name || "—"))}</dd></div>
+      <div><dt>Egg groups</dt><dd>${esc((s.egg_groups || []).map(g => tc(g.name)).join(", ") || "—")}</dd></div>
+      <div><dt>Egg cycles</dt><dd>${s.hatch_counter ?? "—"} <small>${s.hatch_counter != null ? `≈ ${((s.hatch_counter + 1) * 255).toLocaleString()} steps` : ""}</small></dd></div>
+      <div><dt>Habitat</dt><dd>${esc(tc(s.habitat?.name || "—"))}</dd></div>
+      <div><dt>Color · Shape</dt><dd>${esc(tc(s.color?.name || "—"))} · ${esc(tc(s.shape?.name || "—"))}</dd></div>
+    </dl>
+  </section>
+
+  <nav class="pager" aria-label="Neighbouring Pokémon">
+    ${prev ? `<a class="btn" href="#/p/${prev.name}">← #${pad(prev.dex)} ${esc(prev.label)}</a>` : "<span></span>"}
+    ${next ? `<a class="btn" href="#/p/${next.name}">#${pad(next.dex)} ${esc(next.label)} →</a>` : ""}
+  </nav>`;
+
+  const artImg = $("#artImg");
+  $("#shinyBtn")?.addEventListener("click", e => {
+    const b = e.currentTarget, on = b.getAttribute("aria-pressed") !== "true";
+    b.setAttribute("aria-pressed", on); artImg.src = on ? shinyUrl : artUrl; artImg.alt = `${on ? "Shiny " : ""}official artwork of ${spName}`;
+  });
+  $("#cryBtn")?.addEventListener("click", e => { const b = e.currentTarget; new Audio(cry).play().catch(() => { b.lastChild.textContent = "Cry unavailable"; }); });
+
+  renderGames(p, s);
+  setupMoves(p, vgsHere, tok);
+
+  // Async extras, each guarded against the viewer navigating away mid-load.
+  if (p.forms?.[0]) api(p.forms[0].url).then(f => {
+    if (tok !== routeTok) return;
+    const full = en(f.names), formName = en(f.form_names);
+    if (full && full !== spName) { $("#pname").textContent = full; document.title = `${full} · National Pokédex`; }
+    if (formName) $("#psub").textContent = [genus, formName].filter(Boolean).join(" · ");
+  }).catch(() => {});
+  Promise.all(p.abilities.map(a => api(a.ability.url).catch(() => null))).then(list => {
+    if (tok !== routeTok || !p.abilities.length) return;
+    $("#abil").innerHTML = p.abilities.map((a, i) => {
+      const d = list[i], nm = (d && en(d.names)) || tc(a.ability.name);
+      const fx = d && (en(d.effect_entries, "short_effect") || (d.flavor_text_entries || []).filter(f => f.language.name === "en").pop()?.flavor_text);
+      return `<div><b>${esc(nm)}</b>${a.is_hidden ? "<em>Hidden</em>" : ""}${fx ? `<p>${esc(fx.replace(/\s+/g, " "))}</p>` : ""}</div>`;
+    }).join("");
+  });
+  if (s.evolution_chain) api(s.evolution_chain.url).then(c => { if (tok === routeTok) $("#evo").innerHTML = renderEvo(c.chain, s.name); })
+    .catch(() => { if (tok === routeTok) $("#evo").innerHTML = `<p class="muted">Couldn’t load the evolution line.</p>`; });
+  else $("#evo").innerHTML = `<p class="muted">Does not evolve.</p>`;
+  api(p.location_area_encounters).then(d => { if (tok === routeTok) $("#enc").innerHTML = renderEnc(d); })
+    .catch(() => { if (tok === routeTok) $("#enc").innerHTML = `<p class="muted">Couldn’t load encounter data.</p>`; });
+}
+
+/* Evolution */
+function evoText(details) {
+  const texts = [...new Set((details || []).map(d => {
+    const t = d.trigger?.name, out = [];
+    if (d.min_level) out.push(`Lv. ${d.min_level}`); else if (t === "level-up") out.push("Level up");
+    if (t === "trade") out.push("Trade");
+    if (d.item) out.push((t === "use-item" ? "Use " : "") + tc(d.item.name));
+    if (d.held_item) out.push(`holding ${tc(d.held_item.name)}`);
+    if (d.trade_species) out.push(`for ${tc(d.trade_species.name)}`);
+    if (d.min_happiness) out.push("high friendship");
+    if (d.min_affection) out.push("high affection");
+    if (d.min_beauty) out.push("high beauty");
+    if (d.time_of_day) out.push(d.time_of_day === "full-moon" ? "full moon" : d.time_of_day);
+    if (d.known_move) out.push(`knowing ${tc(d.known_move.name)}`);
+    if (d.known_move_type) out.push(`knowing a ${tc(d.known_move_type.name)} move`);
+    if (d.location) out.push(`at ${tc(d.location.name)}`);
+    if (d.gender === 1) out.push("female"); else if (d.gender === 2) out.push("male");
+    if (d.needs_overworld_rain) out.push("while raining");
+    if (d.turn_upside_down) out.push("console upside down");
+    if (d.party_species) out.push(`with ${tc(d.party_species.name)} in party`);
+    if (d.party_type) out.push(`with a ${tc(d.party_type.name)} type in party`);
+    if (d.relative_physical_stats === 1) out.push("Atk > Def"); else if (d.relative_physical_stats === 0) out.push("Atk = Def"); else if (d.relative_physical_stats === -1) out.push("Atk < Def");
+    if (d.used_move) out.push(`after using ${tc(d.used_move.name)}${d.min_move_count ? ` ×${d.min_move_count}` : ""}`);
+    if (d.min_steps) out.push(`after ${d.min_steps.toLocaleString()} steps`);
+    if (d.min_damage_taken) out.push(`after taking ${d.min_damage_taken} damage`);
+    if (d.region) out.push(`in ${tc(d.region.name)}`);
+    if (!out.length && t) out.push(tc(t));
+    return out.join(", ");
+  }).filter(Boolean))];
+  return texts.slice(0, 2).join(" · or ");
+}
+const ARROW = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+function renderEvo(link, current) {
+  const node = l => {
+    const id = idFromUrl(l.species.url), e = BY_DEX.get(id);
+    return `<a class="evo-node" href="#/p/${e ? e.name : l.species.name}" ${l.species.name === current ? 'aria-current="page"' : ""}>${img(id, "", "", 88)}<b>${esc(e?.label || pretty(l.species.name))}</b><span>#${pad(id)}</span></a>`;
+  };
+  const walk = l => l.evolves_to.length
+    ? `${node(l)}<div class="evo-col">${l.evolves_to.map(c => `<div class="evo-branch"><div class="evo-arrow">${ARROW}<span>${esc(evoText(c.evolution_details))}</span></div>${walk(c)}</div>`).join("")}</div>`
+    : node(l);
+  if (!link.evolves_to.length) return `<div class="evo">${node(link)}</div><p class="muted">This Pokémon does not evolve.</p>`;
+  return `<div class="evo">${walk(link)}</div>`;
+}
+
+/* Games */
+function renderGames(p, s) {
+  const versions = new Set();
+  (p.game_indices || []).forEach(g => versions.add(g.version.name));
+  (s.flavor_text_entries || []).forEach(f => versions.add(f.version.name));
+  p.moves.forEach(m => m.version_group_details.forEach(d => { const vg = VG[d.version_group.name]; (vg ? vg.versions : [d.version_group.name]).forEach(v => versions.add(v)); }));
+  const byGen = {};
+  for (const v of versions) { const g = VERSION_GEN[v] || 0; (byGen[g] ||= []).push(v); }
+  const gens = Object.keys(byGen).map(Number).sort((a, b) => (a || 99) - (b || 99));
+  $("#games").innerHTML = gens.length ? gens.map(g => `<div class="gen-row"><b>${g ? "Gen " + ROMAN[g - 1] : "Other"}</b><div class="chips">${byGen[g].sort((a, b) => vOrder(a) - vOrder(b)).map(v => `<span class="chip${/legends-za|mega-dimension/.test(v) ? " za" : ""}">${esc(versionName(v))}</span>`).join("")}</div></div>`).join("")
+    : `<p class="muted">No game data available yet.</p>`;
+  const nums = (s.pokedex_numbers || []).filter(d => d.pokedex.name !== "national");
+  $("#dexnums").innerHTML = nums.length ? `<h3>Regional Pokédex numbers</h3><div class="chips">${nums.map(d => `<span class="chip">${esc(tc(d.pokedex.name))} #${d.entry_number}</span>`).join("")}</div>` : "";
+}
+
+/* Encounters */
+function renderEnc(data) {
+  if (!data || !data.length) return `<p class="muted">PokéAPI has no wild encounter records for this Pokémon. It may come from evolution, a trade, a gift, a raid, or a game whose locations PokéAPI hasn’t mapped yet.</p>`;
+  const byV = {};
+  for (const a of data) for (const vd of a.version_details) {
+    const lv = vd.encounter_details.map(d => [d.min_level, d.max_level]);
+    const methods = [...new Set(vd.encounter_details.map(d => tc(d.method.name)))];
+    (byV[vd.version.name] ||= []).push({ area: tc(a.location_area.name.replace(/-area$/, "")), min: Math.min(...lv.map(x => x[0])), max: Math.max(...lv.map(x => x[1])), chance: vd.max_chance, methods });
+  }
+  return Object.keys(byV).sort((a, b) => vOrder(a) - vOrder(b)).map((v, i) => `<details class="enc"${i === 0 ? " open" : ""}><summary>Pokémon ${esc(versionName(v))}<span>${byV[v].length} location${byV[v].length > 1 ? "s" : ""}</span></summary><ul>${
+    byV[v].map(x => `<li><span>${esc(x.area)}</span><small>${esc(x.methods.join(", "))} · Lv. ${x.min === x.max ? x.min : `${x.min}–${x.max}`} · ${x.chance}%</small></li>`).join("")}</ul></details>`).join("");
+}
+
+/* Moves */
+const METHOD_LABEL = { "level-up": "Level up", machine: "TM / TR / HM", egg: "Egg move", tutor: "Move tutor" };
+const methodRank = k => { const i = Object.keys(METHOD_LABEL).indexOf(k); return i < 0 ? 99 : i; };
+function setupMoves(p, vgs, tok) {
+  if (!vgs.length) return;
+  const vgSel = $("#vgSel"), mSel = $("#mSel");
+  vgSel.value = vgs[vgs.length - 1];
+  const rows = vg => {
+    const out = {};
+    for (const m of p.moves) for (const d of m.version_group_details) if (d.version_group.name === vg)
+      (out[d.move_learn_method.name] ||= []).push({ name: m.move.name, url: m.move.url, lv: d.level_learned_at });
+    return out;
+  };
+  const fillTable = list => {
+    list = [...list].sort((a, b) => a.lv - b.lv || a.name.localeCompare(b.name));
+    const isLv = mSel.value === "level-up";
+    $("#moveBody").innerHTML = list.map(m => `<tr data-url="${esc(m.url)}"><td>${isLv ? (m.lv || "Evo") : "—"}</td><td><b>${esc(tc(m.name))}</b></td><td class="mt"><span class="muted">…</span></td><td class="mc"></td><td class="r mp"></td><td class="r ma"></td><td class="r mpp"></td></tr>`).join("")
+      || `<tr><td colspan="7" class="muted">No moves for this method.</td></tr>`;
+    pool([...$("#moveBody").querySelectorAll("tr[data-url]")], 6, async tr => {
+      if (tok !== routeTok || !tr.isConnected) return;
+      const mv = await api(tr.dataset.url);
+      if (!tr.isConnected) return;
+      tr.children[1].innerHTML = `<b>${esc(en(mv.names) || tc(mv.name))}</b>`;
+      tr.querySelector(".mt").innerHTML = typeChip(mv.type.name, "", "sm");
+      tr.querySelector(".mc").innerHTML = `<span class="dc">${esc(mv.damage_class?.name || "—")}</span>`;
+      tr.querySelector(".mp").textContent = mv.power ?? "—";
+      tr.querySelector(".ma").textContent = mv.accuracy != null ? mv.accuracy + "%" : "—";
+      tr.querySelector(".mpp").textContent = mv.pp ?? "—";
+    });
+  };
+  const fillMethods = () => {
+    const r = rows(vgSel.value), keys = Object.keys(r).sort((a, b) => methodRank(a) - methodRank(b));
+    const prevVal = mSel.value;
+    mSel.innerHTML = keys.map(k => `<option value="${k}">${METHOD_LABEL[k] || tc(k)} (${r[k].length})</option>`).join("");
+    mSel.value = keys.includes(prevVal) ? prevVal : (keys.includes("level-up") ? "level-up" : keys[0]);
+    fillTable(r[mSel.value] || []);
+  };
+  vgSel.addEventListener("change", fillMethods);
+  mSel.addEventListener("change", () => fillTable(rows(vgSel.value)[mSel.value] || []));
+  fillMethods();
+}
+
+/* ---------- Router + boot ---------- */
+function route() {
+  const m = location.hash.match(/^#\/p\/([a-z0-9-]+)/i);
+  if (m) showDetail(m[1].toLowerCase()); else showBrowse();
+}
+window.addEventListener("hashchange", route);
+
+(async function boot() {
+  route();
+  try {
+    await loadIndex();
+    buildFilters();
+    if (!browseEl.hidden) renderGrid(); else route(); // deep link: re-render with prev/next and form labels (data is cached)
+  } catch (e) {
+    $("#count").textContent = "";
+    $("#grid").innerHTML = `<div class="status"><p>Couldn’t reach PokéAPI. Check your connection, then reload.</p><button class="btn" type="button" onclick="location.reload()">Reload</button></div>`;
+  }
+})();
+</script>
+</body>
+</html>
