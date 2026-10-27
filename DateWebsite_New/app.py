@@ -524,13 +524,33 @@ html, body, p, div, label, input, textarea, button { font-family: 'Manrope', sys
 [class*="st-key-opt_"] strong, [class*="st-key-sel_"] strong { font-weight: 700; }
 
 /* ── Inputs ── */
+/* Every layer of every typing field gets the same solid dark fill, so text stays legible
+   no matter which Streamlit theme (light/dark/system) is active. */
+[data-testid="stTextInput"] [data-baseweb], [data-testid="stDateInput"] [data-baseweb],
+[data-testid="stTextArea"] [data-baseweb],
 [data-testid="stTextInput"] input, [data-testid="stDateInput"] input, [data-testid="stTextArea"] textarea {
-  background: rgba(255,255,255,.04) !important; color: var(--text) !important;
-  font-size: 1rem !important; border-radius: 14px !important;
+  background-color: #1d1424 !important;
+}
+[data-testid="stTextInput"] input, [data-testid="stDateInput"] input, [data-testid="stTextArea"] textarea {
+  color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; caret-color: var(--accent) !important;
+  font-size: 1rem !important; line-height: 1.6 !important; opacity: 1 !important;
+}
+[data-testid="stTextInput"] input::placeholder, [data-testid="stDateInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder {
+  color: #a898a8 !important; -webkit-text-fill-color: #a898a8 !important; opacity: 1 !important;  /* 6.3:1 on #1d1424 */
 }
 [data-testid="stTextInput"] > div > div, [data-testid="stDateInput"] > div > div, [data-testid="stTextArea"] > div > div {
-  border-radius: 14px !important; border-color: var(--border) !important; background: transparent !important;
+  border-radius: 14px !important; border: 1px solid rgba(255,255,255,.18) !important; overflow: hidden;
 }
+[data-testid="stTextInput"] > div > div:focus-within, [data-testid="stDateInput"] > div > div:focus-within,
+[data-testid="stTextArea"] > div > div:focus-within {
+  border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(244,114,182,.25) !important;
+}
+[data-testid="stDateInputField"] { background-color: #1d1424 !important; color: #ffffff !important; }
+[data-testid="stDateInputField"] * { color: #ffffff !important; }
+[data-testid="stTextInput"] [data-baseweb] [data-baseweb], [data-testid="stTextArea"] [data-baseweb] [data-baseweb],
+[data-testid="stTextArea"] > div > div > div { border-color: transparent !important; }
+[data-testid="InputInstructions"], [data-testid="InputInstructions"] * { color: #b9a8b8 !important; background: transparent !important; }
 [data-testid="stTextInput"] input { text-align: center; min-height: 50px; }
 [data-testid="stWidgetLabel"] p { color: var(--muted) !important; font-size: .78rem !important; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
 
